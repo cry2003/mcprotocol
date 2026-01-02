@@ -196,7 +196,7 @@ This table is based on the official Minecraft protocol data types. Status indica
     <tr>
       <td>X Enum</td>
       <td>size of X</td>
-      <td>Pending</td>
+      <td>Implemented</td>
     </tr>
     <tr>
       <td>EnumSet (n)</td>
