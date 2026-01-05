@@ -43,27 +43,28 @@ class VarInt:
         return bytes(result)
 
     @classmethod
-    def from_bytes(cls, data: bytes) -> "VarInt":
+    def from_bytes(cls, data: bytes, offset: int = 0) -> tuple["VarInt", int]:
         """
-        Decodes a VarInt from a sequence of bytes.
+        Decodes a VarInt from bytes starting at `offset`.
 
         Args:
             data (bytes): Byte sequence containing the VarInt.
+            offset (int): Start position to read from.
 
         Returns:
-            VarInt: Decoded VarInt object.
+            tuple[VarInt, int]: Decoded VarInt and number of bytes consumed.
 
         Raises:
-            ValueError: If the VarInt is too long (>5 bytes) or malformed.
+            ValueError: If the VarInt is too long (>5 bytes) or incomplete.
         """
         num_read = 0
         result = 0
-        for b in data:
+        for b in data[offset:]:
             value = b & _SEGMENT_BITS
             result |= value << (7 * num_read)
             num_read += 1
             if num_read > 5:
-                raise ValueError("VarInt is too long (max 5 bytes)")
+                raise ValueError("VarInt too long (max 5 bytes)")
             if (b & _CONTINUE_BIT) == 0:
-                return cls(result)
+                return cls(result), num_read
         raise ValueError("Incomplete VarInt bytes")
