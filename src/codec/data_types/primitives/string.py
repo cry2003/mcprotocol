@@ -66,3 +66,30 @@ class String:
                 f"Encoded length VarInt exceeds 3 bytes: {len(length_prefix)}"
             )
         return length_prefix + utf8_bytes
+    
+    @classmethod
+    def from_bytes(cls, data: bytes) -> "String":
+        """Deserialize a String from raw bytes.
+
+        Args:
+            data (bytes): Raw bytes received from the network.
+
+        Returns:
+            String: A new String instance with the decoded value.
+
+        Raises:
+            ValueError: If decoding fails or data is too short.
+        """
+        # Read VarInt length prefix
+        length_varint = VarInt.from_bytes(data)
+        str_len = length_varint.value
+
+        # Remaining bytes must contain the UTF-8 string
+        if len(data) < len(bytes(length_varint)) + str_len:
+            raise ValueError("Data too short for expected string length")
+
+        utf8_bytes = data[len(bytes(length_varint)) : len(bytes(length_varint)) + str_len]
+        value = utf8_bytes.decode("utf-8")
+        return cls(value)
+
+
