@@ -18,7 +18,6 @@ mcprotocol
 |       
 \---src
     |   main.py
-    |   test_main.py
     |   
     \---codec
         |   __init__.py
