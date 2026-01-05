@@ -41,3 +41,29 @@ class VarInt:
             result.append((value & _SEGMENT_BITS) | _CONTINUE_BIT)
             value >>= 7
         return bytes(result)
+
+    @classmethod
+    def from_bytes(cls, data: bytes) -> "VarInt":
+        """
+        Decodes a VarInt from a sequence of bytes.
+
+        Args:
+            data (bytes): Byte sequence containing the VarInt.
+
+        Returns:
+            VarInt: Decoded VarInt object.
+
+        Raises:
+            ValueError: If the VarInt is too long (>5 bytes) or malformed.
+        """
+        num_read = 0
+        result = 0
+        for b in data:
+            value = b & _SEGMENT_BITS
+            result |= value << (7 * num_read)
+            num_read += 1
+            if num_read > 5:
+                raise ValueError("VarInt is too long (max 5 bytes)")
+            if (b & _CONTINUE_BIT) == 0:
+                return cls(result)
+        raise ValueError("Incomplete VarInt bytes")
