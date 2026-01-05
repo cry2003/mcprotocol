@@ -58,7 +58,7 @@ This table is based on the official Minecraft protocol data types. Status indica
       <td>Long</td>
       <td>8</td>
       <td>Signed 64-bit integer (-2⁶³ to 2⁶³-1)</td>
-      <td>Pending</td>
+      <td>Implemented</td>
     </tr>
     <tr>
       <td>Float</td>

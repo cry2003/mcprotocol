@@ -8,34 +8,44 @@ This document outlines the structure, responsibilities, and relationships of mod
 
 ```text
 mcprotocol
-│   .gitignore
-│   
-├───docs
-│       ARCHITECTURE.md
-│       data_types.md
-│       
-└───src
-    │   main.py
-    │   
-    └───codec
-        │   __init__.py
-        │   
-        ├───data_types
-        │   │   constants.py
-        │   │   
-        │   ├───complex
-        │   └───primitives
-        │           boolean.py
-        │           string.py
-        │           unsigned_short.py
-        │           uuid.py
-        │           varint.py
-        │           varlong.py
-        │           
-        └───packets
-                constants.py
-                packet.py
-                
+|   .gitignore
+|   LICENSE.md
+|   README.md
+|   
++---docs
+|       ARCHITECTURE.md
+|       data_types.md
+|       
+\---src
+    |   main.py
+    |   
+    \---codec
+        |   __init__.py
+        |   
+        +---data_types
+        |   |   constants.py
+        |   |   
+        |   \---primitives
+        |           boolean.py
+        |           long.py
+        |           string.py
+        |           unsigned_short.py
+        |           uuid.py
+        |           varint.py
+        |           varlong.py
+        |           
+        \---packets
+            |   constants.py
+            |   packet.py
+            |   registry.py
+            |   __init__.py
+            |   
+            +---clientbound
+            |   \---status
+            |           pong_response.py
+            |           status_response.py
+            |           
+            \---serverbound
 
 ```
 
