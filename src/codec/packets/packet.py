@@ -104,3 +104,10 @@ class Packet(ABC):
             )
 
         return packet_length + data_length + compressed
+
+    def __str__(self) -> str:
+        """Return a concise representation showing only public fields."""
+        fields = (f"{name}={getattr(self, name)!r}" for name in getattr(self, "__slots__", ())
+                if not name.startswith("_") and name != "packet_id")
+
+        return f"<{self.__class__.__name__} packet_id=0x{self.packet_id:02X}, {', '.join(fields)}>"
