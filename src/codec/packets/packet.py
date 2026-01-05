@@ -22,6 +22,10 @@ class Packet(ABC):
     __slots__ = ("packet_id",)
 
     def __init__(self, packet_id):
+        if not isinstance(packet_id, VarInt):
+            raise TypeError(
+                f"packet_id must be a VarInt, got {type(packet_id).__name__}"
+            )
         self.packet_id = packet_id
 
     @abstractmethod
@@ -107,7 +111,10 @@ class Packet(ABC):
 
     def __str__(self) -> str:
         """Return a concise representation showing only public fields."""
-        fields = (f"{name}={getattr(self, name)!r}" for name in getattr(self, "__slots__", ())
-                if not name.startswith("_") and name != "packet_id")
+        fields = (
+            f"{name}={getattr(self, name)!r}"
+            for name in getattr(self, "__slots__", ())
+            if not name.startswith("_") and name != "packet_id"
+        )
 
         return f"<{self.__class__.__name__} packet_id=0x{self.packet_id:02X}, {', '.join(fields)}>"
