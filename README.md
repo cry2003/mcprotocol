@@ -2,7 +2,7 @@
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue)](LICENSE)
 
-A Python library implementing a **Minecraft protocol codec**. This project provides tools for encoding and decoding **packets** and **data types** used in Minecraft networking, fully compliant with the official protocol specification.
+A Python library implementing a **Minecraft protocol codec**. This project provides tools for encoding and decoding **packets** and **data types** used in Minecraft networking, fully compliant with the [official protocol specification](https://minecraft.wiki/w/Java_Edition_protocol/Packets).
 
 ## Features
 
@@ -66,34 +66,44 @@ print(serialized)
 
 ```bash
 mcprotocol
-│   .gitignore
-│   README.md
-│
-├───docs
-│       ARCHITECTURE.md
-│       data_types.md
-│
-└───src
-    │   main.py
-    │
-    └───codec
-        │   __init__.py
-        │
-        ├───data_types
-        │   │   constants.py
-        │   │
-        │   ├───complex
-        │   └───primitives
-        │           boolean.py
-        │           string.py
-        │           unsigned_short.py
-        │           uuid.py
-        │           varint.py
-        │           varlong.py
-        │
-        └───packets
-                constants.py
-                packet.py
+|   .gitignore
+|   LICENSE.md
+|   README.md
+|   
++---docs
+|       ARCHITECTURE.md
+|       data_types.md
+|       
+\---src
+    |   main.py
+    |   
+    \---codec
+        |   __init__.py
+        |   
+        +---data_types
+        |   |   constants.py
+        |   |   
+        |   \---primitives
+        |           boolean.py
+        |           long.py
+        |           string.py
+        |           unsigned_short.py
+        |           uuid.py
+        |           varint.py
+        |           varlong.py
+        |           
+        \---packets
+            |   constants.py
+            |   packet.py
+            |   registry.py
+            |   __init__.py
+            |   
+            +---clientbound
+            |   \---status
+            |           pong_response.py
+            |           status_response.py
+            |           
+            \---serverbound
 ````
 
 ## License
