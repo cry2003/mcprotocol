@@ -1,3 +1,5 @@
+# src\codec\packets\status\clientbound\status_response.py
+
 import json
 from typing import List, Optional
 from codec.packets.packet import Packet
