@@ -7,33 +7,63 @@ from ..constants import _DEFAULT_MAX_CODE_UNITS
 
 @dataclass(slots=True, frozen=True)
 class String:
-    """Represents a UTF-8 string in the Minecraft protocol.
+    """
+    Represents a UTF-8 string in the Minecraft protocol with a VarInt length prefix.
 
-    The string is prefixed with a VarInt representing the number of bytes
-    of its UTF-8 encoding. The length is validated against both UTF-16 code units
-    and UTF-8 byte length to ensure compliance with the protocol.
+    Minecraft encodes strings as follows:
+        [VarInt length of UTF-8 bytes][UTF-8 bytes]
 
-    The maximum allowed UTF-16 code units is `_DEFAULT_MAX_CODE_UNITS` (32767).
-    The maximum allowed UTF-8 length is `n * 3` bytes, where `n` is the number
-    of UTF-16 code units. The VarInt representing the length must not exceed 3 bytes.
+    This class handles:
+        - Serialization (`__bytes__`) to network-ready bytes.
+        - Deserialization (`from_bytes`) from raw network bytes.
+        - Validation of string length against protocol limits.
+
+    Protocol rules enforced:
+        - Maximum UTF-16 code units: `_DEFAULT_MAX_CODE_UNITS` (32767)
+        - Maximum UTF-8 encoded length: `_DEFAULT_MAX_CODE_UNITS * 3` bytes
+        - Length VarInt must not exceed 3 bytes
+
+    Attributes:
+        value (str): The actual string content.
+
+    Methods:
+        __bytes__():
+            Serialize the string to bytes with a VarInt length prefix.
+            Raises ValueError if the VarInt length exceeds 3 bytes.
+
+        from_bytes(data: bytes, offset: int = 0) -> tuple[String, int]:
+            Deserialize a string from bytes starting at `offset`.
+            Returns a tuple:
+                - String instance
+                - Total bytes consumed (length VarInt + UTF-8 bytes)
+            Raises ValueError if data is too short for the expected string length.
 
     Example usage:
         >>> s = String("Hello")
-        >>> bytes(s)
+        >>> b = bytes(s)
+        >>> b
         b'\x05Hello'
 
-    Attributes:
-        value (str): The string value to be serialized.
+        >>> s2, consumed = String.from_bytes(b)
+        >>> s2.value
+        'Hello'
+        >>> consumed
+        6
+
+    Notes:
+        - The UTF-16 code unit limit ensures compatibility with the official protocol.
+        - The UTF-8 byte length limit ensures the length prefix fits in a 3-byte VarInt.
+        - Offset support in `from_bytes` allows parsing a string embedded inside a packet buffer.
     """
 
     value: str
 
     def __post_init__(self) -> None:
-        """Validate the string after initialization.
+        """Validate string length according to protocol limits.
 
         Raises:
             ValueError: If the string exceeds maximum UTF-16 code units or
-                maximum UTF-8 byte length.
+                        maximum UTF-8 byte length.
         """
         utf16_le = self.value.encode("utf-16-le")
         code_units = len(utf16_le) >> 1
@@ -51,13 +81,13 @@ class String:
             )
 
     def __bytes__(self) -> bytes:
-        """Convert the string to bytes suitable for network transmission.
+        """Serialize the string with VarInt length prefix for network transmission.
 
         Returns:
-            bytes: VarInt length prefix followed by UTF-8 encoded string.
+            bytes: VarInt length + UTF-8 bytes.
 
         Raises:
-            ValueError: If the VarInt-encoded length exceeds 3 bytes.
+            ValueError: If the length VarInt exceeds 3 bytes.
         """
         utf8_bytes = self.value.encode("utf-8")
         length_prefix = bytes(VarInt(len(utf8_bytes)))
@@ -66,30 +96,32 @@ class String:
                 f"Encoded length VarInt exceeds 3 bytes: {len(length_prefix)}"
             )
         return length_prefix + utf8_bytes
-    
+
     @classmethod
-    def from_bytes(cls, data: bytes) -> "String":
-        """Deserialize a String from raw bytes.
+    def from_bytes(cls, data: bytes, offset: int = 0) -> tuple["String", int]:
+        """Deserialize a String from a byte buffer starting at `offset`.
 
         Args:
-            data (bytes): Raw bytes received from the network.
+            data (bytes): Byte buffer containing the string.
+            offset (int, optional): Starting index in the buffer. Defaults to 0.
 
         Returns:
-            String: A new String instance with the decoded value.
+            tuple[String, int]: A tuple containing:
+                - String instance
+                - Number of bytes consumed (length VarInt + UTF-8 string)
 
         Raises:
-            ValueError: If decoding fails or data is too short.
+            ValueError: If data is too short for the expected string length.
         """
-        # Read VarInt length prefix
-        length_varint = VarInt.from_bytes(data)
+        length_varint, varint_size = VarInt.from_bytes(data, offset)
         str_len = length_varint.value
+        start = offset + varint_size
+        end = start + str_len
 
-        # Remaining bytes must contain the UTF-8 string
-        if len(data) < len(bytes(length_varint)) + str_len:
+        if len(data) < end:
             raise ValueError("Data too short for expected string length")
 
-        utf8_bytes = data[len(bytes(length_varint)) : len(bytes(length_varint)) + str_len]
+        utf8_bytes = data[start:end]
         value = utf8_bytes.decode("utf-8")
-        return cls(value)
-
-
+        total_consumed = varint_size + str_len
+        return cls(value), total_consumed
