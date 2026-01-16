@@ -117,4 +117,4 @@ class Packet(ABC):
             if not name.startswith("_") and name != "packet_id"
         )
 
-        return f"<{self.__class__.__name__} packet_id=0x{self.packet_id:02X}, {', '.join(fields)}>"
+        return f"<{self.__class__.__name__} packet_id={self.packet_id.value:#04x}, {', '.join(fields)}>"
