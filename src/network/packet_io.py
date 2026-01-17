@@ -1,7 +1,8 @@
-# src/network/packet_io.py
+# src\network\packet_io.py
 
 import socket
 from typing import Optional
+
 from codec.packets.registry import PacketRegistry
 from codec.packets.packet import Packet
 from codec.data_types.primitives.varint import VarInt
@@ -9,64 +10,123 @@ from codec.packets.constants import _MAX_VARINT_3_BYTES
 
 
 class PacketIO:
-    """Handle Minecraft packet I/O using PacketRegistry and Packet base class."""
+    """Handles packet input/output."""
 
     def __init__(
         self,
         sock: socket.socket,
-        registry: PacketRegistry,
         compression_threshold: Optional[int] = None,
+        initial_state: str = "Handshaking",
     ):
+        """
+        Initialize the packet I/O handler.
+
+        Args:
+            sock: Connected TCP socket.
+            registry: Packet registry used for packet resolution.
+            compression_threshold: Compression threshold if enabled.
+            initial_state: Initial protocol state.
+        """
         self.sock = sock
-        self.registry = registry
+        self.registry = PacketRegistry()
         self.compression_threshold = compression_threshold
+        self._state = initial_state
 
-    # ---------------------- Private encode/decode ---------------------- #
+    @property
+    def state(self) -> str:
+        """
+        Return the current protocol state.
 
-    def _encode_packet(
-        self, state: str, direction: str, packet_id: str, **kwargs
-    ) -> bytes:
-        """Create a serverbound packet and serialize it (compression handled by Packet)."""
+        Returns:
+            Current state.
+        """
+        return self._state
+
+    def set_state(self, new_state: str) -> None:
+        """
+        Set the current protocol state.
+
+        Args:
+            new_state: New protocol state.
+        """
+        self._state = new_state
+
+    def _encode_packet(self, packet_id: str, **kwargs) -> bytes:
+        """
+        Serialize a serverbound packet.
+
+        Args:
+            packet_id: Packet identifier.
+            **kwargs: Packet fields.
+
+        Returns:
+            Serialized packet bytes.
+        """
         packet: Packet = self.registry.instantiate(
-            state, direction, packet_id, **kwargs
+            state=self._state,
+            direction="serverbound",
+            packet_id=packet_id,
+            **kwargs,
         )
         return packet.serialize(self.compression_threshold)
 
-    def _decode_packet(self, state: str, direction: str, raw_bytes: bytes) -> Packet:
-        """Decode received bytes into a Packet object (handles compression)."""
-        # 1. Read packet length VarInt
+    def _decode_packet(self, raw_bytes: bytes) -> Packet:
+        """
+        Decode a clientbound packet.
+
+        Args:
+            raw_bytes: Full packet bytes including length prefix.
+
+        Returns:
+            Decoded packet instance.
+
+        Raises:
+            ValueError: If packet length exceeds limits.
+        """
         packet_length, cursor = VarInt.from_bytes(raw_bytes, 0)
         if packet_length.value > _MAX_VARINT_3_BYTES:
             raise ValueError(f"Packet length too large: {packet_length.value}")
 
-        # 2. Slice full packet bytes
         packet_bytes = raw_bytes[cursor : cursor + packet_length.value]
 
-        # 3. Read Packet ID VarInt
         packet_id, pid_size = VarInt.from_bytes(packet_bytes, 0)
         packet_data = packet_bytes[pid_size:]
 
-        # 4. Instantiate clientbound packet
         return self.registry.instantiate(
-            state, direction, f"{packet_id.value:#04x}", data=packet_data
+            state=self._state,
+            direction="clientbound",
+            packet_id=f"{packet_id.value:#04x}",
+            data=packet_data,
         )
 
-    # ---------------------- Public I/O ---------------------- #
+    def send(self, packet_id: str, **kwargs) -> None:
+        """
+        Send a serverbound packet.
 
-    def send(self, state: str, direction: str, packet_id: str, **kwargs):
-        """Encode and send a serverbound packet over the socket."""
-        self.sock.sendall(self._encode_packet(state, direction, packet_id, **kwargs))
+        Args:
+            packet_id: Packet identifier.
+            **kwargs: Packet fields.
+        """
+        self.sock.sendall(self._encode_packet(packet_id, **kwargs))
 
-    def read(self, state: str, direction: str) -> Packet:
-        """Read a full clientbound packet from the socket and decode it."""
-        # 1. Read VarInt packet length (max 3 bytes)
+    def read(self) -> Packet:
+        """
+        Read and decode a clientbound packet.
+
+        Returns:
+            Decoded packet instance.
+
+        Raises:
+            ConnectionError: If the socket closes unexpectedly.
+            ValueError: If the packet length is invalid.
+        """
         raw_length = bytearray()
         for _ in range(3):
-            b = self.sock.recv(1)
-            if not b:
+            byte = self.sock.recv(1)
+            if not byte:
                 raise ConnectionError("Socket closed while reading packet length")
-            raw_length += b
-            if b[0] & 0x80 == 0:  # MSB 0 → last byte of VarInt
+            raw_length += byte
+            if byte[0] & 0x80 == 0:
                 break
         else:
             raise ValueError("VarInt length exceeds 3 bytes")
@@ -75,7 +135,6 @@ class PacketIO:
         if packet_length.value > _MAX_VARINT_3_BYTES:
             raise ValueError(f"Packet length too large: {packet_length.value}")
 
-        # 2. Read remaining bytes
         raw_packet = bytearray()
         remaining = packet_length.value
         while remaining > 0:
@@ -85,5 +144,4 @@ class PacketIO:
             raw_packet += chunk
             remaining -= len(chunk)
 
-        full_bytes = bytes(raw_length) + bytes(raw_packet)
-        return self._decode_packet(state, direction, full_bytes)
+        return self._decode_packet(bytes(raw_length) + bytes(raw_packet))
