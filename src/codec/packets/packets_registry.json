@@ -2,7 +2,8 @@
   "Handshaking": {
     "clientbound": {},
     "serverbound": {
-      "0x00": "codec.packets.handshaking.serverbound.intention.Intention"
+      "0x00": "codec.packets.handshaking.serverbound.intention.Intention",
+      "0xFE": "codec.packets.handshaking.serverbound.lslp.LegacyServerListPing"
     }
   },
   "Status": {
