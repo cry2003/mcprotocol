@@ -62,7 +62,7 @@ serialized = packet.serialize()
 print(serialized)
 ````
 
-### Project Structure
+## Project Structure
 
 ```bash
 mcprotocol
