@@ -2,7 +2,64 @@
 
 # Minecraft Protocol Types - Implementation Status
 
-This table is based on the official Minecraft protocol data types. Status indicates whether the type is already implemented in this project.
+Reference: Java Edition Protocol  
+Source: [Minecraft Wiki – Java Edition Protocol / Data Types](https://minecraft.wiki/w/Java_Edition_protocol/Packets#Data_types)
+
+---
+
+## Primitive Type Standards
+
+All implemented primitive types follow these rules:
+
+1. **Serialization**
+   - Each type implements `__bytes__()` returning protocol-compliant bytes.
+   - Deserialization is supported via class methods (`from_bytes()` or `decode()`).
+
+2. **Validation**
+   - Values are validated to fit protocol ranges.
+   - Out-of-range or invalid values raise exceptions (`ValueError`).
+
+3. **Memory Optimization**
+   - Types use `@dataclass(slots=True, frozen=True)` for immutability and memory efficiency.
+
+4. **Boolean**
+   - Single byte:
+     - `False` → 0x00
+     - `True` → 0x01
+
+5. **Enum**
+   - Integer restricted to a predefined set.
+   - Serialized via a chosen base type (e.g., VarInt, UnsignedShort).
+
+6. **Long**
+   - Signed 64-bit integer, big-endian.
+   - Range: -2^63 to 2^63 - 1.
+   - Constructible from 8-byte buffers.
+
+7. **UnsignedShort**
+   - 16-bit unsigned integer, big-endian.
+   - Range: 0–65535.
+
+8. **String**
+   - UTF-8 string prefixed with VarInt length.
+   - Maximum 32767 UTF-16 code units; max 32767\*3 UTF-8 bytes.
+   - Length prefix must fit in 3 bytes.
+
+9. **UUID**
+   - 128-bit (16 bytes) big-endian.
+   - MSB: first 8 bytes, LSB: last 8 bytes.
+   - Decodable via `decode()`.
+
+10. **VarInt**
+    - Variable-length 32-bit signed integer (1–5 bytes).
+    - Each byte: lower 7 bits = value, MSB = continuation flag.
+    - Range: 0 to 2^32-1.
+    - Decodable via `from_bytes()`.
+
+11. **VarLong**
+    - Variable-length 64-bit signed integer (1–10 bytes).
+    - Each byte: lower 7 bits = value, MSB = continuation flag.
+    - Range: 0 to 2^64-1.
 
 ---
 
@@ -117,7 +174,9 @@ This table is based on the official Minecraft protocol data types. Status indica
   </tbody>
 </table>
 
---- ## 2. Structured / Complex Types
+---
+
+## 2. Structured / Complex Types
 
 <table>
   <thead>

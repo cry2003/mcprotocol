@@ -7,53 +7,27 @@ from ..constants import _DEFAULT_MAX_CODE_UNITS
 
 @dataclass(slots=True, frozen=True)
 class String:
-    """
-    Represents a UTF-8 string in the Minecraft protocol with a VarInt length prefix.
+    """Represents a UTF-8 string in Minecraft protocol format.
 
-    Minecraft encodes strings as follows:
-        [VarInt length of UTF-8 bytes][UTF-8 bytes]
+    Encoding:
+        - Prefix with a VarInt representing UTF-8 byte length.
+        - Followed by UTF-8 encoded bytes of the string.
 
-    This class handles:
-        - Serialization (`__bytes__`) to network-ready bytes.
-        - Deserialization (`from_bytes`) from raw network bytes.
-        - Validation of string length against protocol limits.
-
-    Protocol rules enforced:
+    Protocol constraints:
         - Maximum UTF-16 code units: `_DEFAULT_MAX_CODE_UNITS` (32767)
         - Maximum UTF-8 encoded length: `_DEFAULT_MAX_CODE_UNITS * 3` bytes
         - Length VarInt must not exceed 3 bytes
 
     Attributes:
-        value (str): The actual string content.
+        value (str): The string content.
 
-    Methods:
-        __bytes__():
-            Serialize the string to bytes with a VarInt length prefix.
-            Raises ValueError if the VarInt length exceeds 3 bytes.
+    Serialization:
+        - `__bytes__()` returns VarInt length + UTF-8 bytes.
+        - `from_bytes(data, offset=0)` parses a string from a byte buffer.
 
-        from_bytes(data: bytes, offset: int = 0) -> tuple[String, int]:
-            Deserialize a string from bytes starting at `offset`.
-            Returns a tuple:
-                - String instance
-                - Total bytes consumed (length VarInt + UTF-8 bytes)
-            Raises ValueError if data is too short for the expected string length.
-
-    Example usage:
-        >>> s = String("Hello")
-        >>> b = bytes(s)
-        >>> b
-        b'\x05Hello'
-
-        >>> s2, consumed = String.from_bytes(b)
-        >>> s2.value
-        'Hello'
-        >>> consumed
-        6
-
-    Notes:
-        - The UTF-16 code unit limit ensures compatibility with the official protocol.
-        - The UTF-8 byte length limit ensures the length prefix fits in a 3-byte VarInt.
-        - Offset support in `from_bytes` allows parsing a string embedded inside a packet buffer.
+    Validation:
+        - Raises ValueError if string exceeds UTF-16 or UTF-8 limits.
+        - Ensures length prefix fits protocol requirements.
     """
 
     value: str

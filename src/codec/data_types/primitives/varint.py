@@ -6,13 +6,23 @@ from ..constants import _SEGMENT_BITS, _CONTINUE_BIT, _MAX_VARINT
 
 @dataclass(slots=True, frozen=True)
 class VarInt:
-    """Represents a variable-length 32-bit signed integer in Minecraft protocol format.
+    """Represents a variable-length 32-bit signed integer in Minecraft protocol.
 
-    Encodes integers using 1 to 5 bytes, where each byte uses 7 bits for value
-    and the most significant bit (MSB) as a continuation flag.
+    Encoding:
+        - Uses 1 to 5 bytes.
+        - Each byte: lower 7 bits store the value, MSB as continuation flag.
+        - Allows compact representation of small integers.
 
     Attributes:
-        value (int): The integer value to be encoded (0 to _MAX_VARINT).
+        value (int): Integer between 0 and _MAX_VARINT (0 to 2^32-1).
+
+    Serialization:
+        - `__bytes__()` encodes the integer into VarInt format.
+        - `from_bytes(data, offset=0)` decodes VarInt from a byte buffer.
+
+    Validation:
+        - Raises ValueError if the value is out of range.
+        - Ensures decoded VarInt is at most 5 bytes.
     """
 
     value: int

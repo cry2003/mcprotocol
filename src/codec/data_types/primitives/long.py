@@ -5,12 +5,24 @@ from ..constants import _MAX_LONG, _MIN_LONG
 
 @dataclass(slots=True, frozen=True)
 class Long:
-    """
-    Represents a signed 64-bit integer in Minecraft protocol format.
+    """Represents a signed 64-bit integer in Minecraft protocol format.
+
+    Range:
+        - Minimum: -2^63
+        - Maximum: 2^63 - 1
 
     Attributes:
-        value (int): Integer value between -2^63 and 2^63 - 1.
+        value (int): The integer value.
+
+    Serialization:
+        - `__bytes__()` returns 8-byte big-endian two's complement representation.
+        - `from_bytes(data: bytes)` reconstructs a Long from raw bytes.
+
+    Validation:
+        - Raises ValueError if `value` is out of range.
+        - Ensures protocol-compliant 64-bit representation.
     """
+
 
     value: int
 
@@ -36,7 +48,11 @@ class Long:
     
     @classmethod
     def from_bytes(cls, data: bytes) -> "Long":
-        """Construct a Long from 8 raw bytes."""
+        """Construct a Long from 8 raw bytes.
+        
+        Returns:
+            Long: An instance of the `Long` class representing the decoded 64-bit integer.
+        """
         if len(data) < 8:
             raise ValueError(f"Not enough bytes to unpack Long, got {len(data)}")
         value = struct.unpack(">q", data[:8])[0]

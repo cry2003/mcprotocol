@@ -6,15 +6,19 @@ from typing import Type
 
 @dataclass(slots=True, frozen=True)
 class Enum:
-    """Represents a protocol enum encoded as a specific primitive type.
+    """Represents an enumerated value in Minecraft protocol format.
 
     Encoding:
-        - The enum value is encoded using the specified base type (e.g., VarInt, UnsignedShort).
-        - No caching; bytes are computed on demand.
+        - Enum value is stored using a specified base type (e.g., VarInt, UnsignedShort).
+        - `__bytes__()` encodes the integer value with the chosen primitive type.
 
     Attributes:
-        value (int): The integer value of the enum.
-        base_type (Type): The primitive type used for encoding (must support __bytes__).
+        value (int): The integer representing the enum.
+        base_type (Type): Primitive type used for serialization. Must implement `__bytes__`.
+
+    Serialization:
+        - Delegates encoding to `base_type`.
+        - Ensures consistent serialization across packets.
     """
 
     value: int

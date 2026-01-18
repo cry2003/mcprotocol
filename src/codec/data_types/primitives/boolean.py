@@ -5,16 +5,21 @@ from dataclasses import dataclass
 
 @dataclass(slots=True, frozen=True)
 class Boolean:
-    """Represents a boolean value in Minecraft protocol format.
+    """Represents a Boolean in the Minecraft protocol.
 
-    Encodes boolean as a single unsigned byte:
-        False -> 0x00
-        True  -> 0x01
+    Encoding:
+        - False → 0x00
+        - True  → 0x01
+    Stored as a single unsigned byte.
 
     Attributes:
         value (bool): The boolean value.
-    """
 
+    Serialization:
+        - `__bytes__()` returns the byte representation.
+        - Ensures protocol-compliant single-byte encoding.
+    """
+    
     value: bool
 
     def __bytes__(self) -> bytes:

@@ -7,14 +7,23 @@ from typing import Union, Tuple
 
 @dataclass(slots=True, frozen=True)
 class UUID:
-    """Represents a UUID in the Minecraft protocol.
+    """Represents a 128-bit UUID in Minecraft protocol format.
 
-    Encoded as 16 bytes (128-bit) in big-endian order:
-        - First 8 bytes: Most significant bits (MSB)
-        - Last 8 bytes: Least significant bits (LSB)
+    Encoding:
+        - 16 bytes in big-endian order:
+            - First 8 bytes: Most Significant Bits (MSB)
+            - Last 8 bytes: Least Significant Bits (LSB)
 
     Attributes:
-        value (PyUUID): The UUID value.
+        value (PyUUID): The UUID object.
+
+    Serialization:
+        - `__bytes__()` returns the 16-byte network-ready UUID.
+        - `decode(buf, offset=0)` decodes UUID from buffer.
+
+    Validation:
+        - Ensures `value` is a valid PyUUID instance.
+        - Raises ValueError if the buffer is too short for decoding.
     """
 
     value: PyUUID

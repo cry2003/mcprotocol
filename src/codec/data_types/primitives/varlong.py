@@ -6,13 +6,23 @@ from ..constants import _SEGMENT_BITS, _CONTINUE_BIT, _MAX_VARLONG
 
 @dataclass(slots=True, frozen=True)
 class VarLong:
-    """Represents a variable-length 64-bit signed integer in Minecraft protocol format.
+    """Represents a variable-length 64-bit signed integer in Minecraft protocol.
 
-    Encodes integers using 1 to 10 bytes, where each byte uses 7 bits for value
-    and the most significant bit (MSB) as a continuation flag.
+    Encoding:
+        - Uses 1 to 10 bytes.
+        - Each byte: lower 7 bits store the value, MSB as continuation flag.
+        - Efficient for small 64-bit integers.
 
     Attributes:
-        value (int): The integer value to be encoded (0 to _MAX_VARLONG).
+        value (int): Integer between 0 and _MAX_VARLONG (0 to 2^64-1).
+
+    Serialization:
+        - `__bytes__()` encodes the integer into VarLong format.
+        - No explicit from_bytes in this snippet, but similar approach can be used.
+
+    Validation:
+        - Raises ValueError if the value is out of range.
+        - Ensures protocol-compliant variable-length encoding.
     """
 
     value: int

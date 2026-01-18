@@ -6,13 +6,21 @@ import struct
 
 @dataclass(slots=True, frozen=True)
 class UnsignedShort:
-    """Represents an unsigned short integer in Minecraft protocol format.
+    """Represents a 16-bit unsigned integer in Minecraft protocol.
 
-    Encodes 16-bit unsigned integers in big-endian byte order.
+    Encoding:
+        - Big-endian 2-byte representation.
 
     Attributes:
-        value (int): The integer value to be encoded (0-65535).
+        value (int): Integer value between 0 and 65535.
+
+    Validation:
+        - Raises ValueError if the value is out of range.
+
+    Serialization:
+        - `__bytes__()` returns the 2-byte big-endian value.
     """
+
     value: int
 
     def __post_init__(self) -> None:
