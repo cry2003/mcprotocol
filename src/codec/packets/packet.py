@@ -9,14 +9,28 @@ from codec.packets.constants import _MAX_VARINT_3_BYTES, _MAX_UNCOMPRESSED_SERVE
 
 
 class Packet(ABC):
-    """Base class for Minecraft protocol packets.
+    """Base class for all Minecraft protocol packets.
+
+    This class defines the common structure and serialization logic
+    for packets used in the Minecraft Java Edition protocol.
 
     Subclasses must:
-        - define `packet_id: VarInt`
-        - implement `_iter_fields()` yielding the serialized fields as bytes.
+        - define `packet_id: VarInt` (the unique packet identifier)
+        - implement `_iter_fields()` yielding the serialized fields in order
 
     Attributes:
-        packet_id (VarInt): The protocol packet ID.
+        packet_id (VarInt): Unique identifier of the packet as per protocol.
+
+    Serialization:
+        - Handles both uncompressed and optionally compressed packets
+          according to the protocol's compression threshold.
+        - Validates packet size against protocol limits.
+        - Produces bytes ready for transmission over TCP.
+
+    Error handling:
+        - Raises `TypeError` if packet_id is not a VarInt.
+        - Raises `ValueError` if packet length exceeds protocol limits
+          or compression threshold is invalid.
     """
 
     __slots__ = ("packet_id",)
