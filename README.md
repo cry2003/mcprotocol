@@ -59,7 +59,7 @@ python -m src.main
 
 This quickstart shows constructing primitives and serializing a packet. The `Packet` base class handles packet id framing and optional compression. Subclasses provide the `packet_id` and implement `_iter_fields()` to yield serialized field bytes.
 
-### Handshake packet example (corrected)
+### Handshake packet example
 
 Use primitives directly; do not mix raw `to_bytes` calls inside `_iter_fields()` — yield primitives or other bytes-ready objects.
 
