@@ -1,6 +1,5 @@
 # src\codec\packets\registry.py
 
-import sys
 import os
 import json
 import importlib
@@ -13,10 +12,6 @@ class PacketRegistry:
         """
         Load packet registry from JSON configuration.
         """
-        sys.path.insert(
-            0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-        )
-
         with open(
             os.path.join(os.path.dirname(__file__), "packets_registry.json"),
             "r",
