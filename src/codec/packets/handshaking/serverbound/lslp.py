@@ -1,75 +1,95 @@
-# src/codec/packets/lslp.py
-
-from dataclasses import dataclass
 from codec.packets.packet import Packet
+from codec.data_types.primitives.varint import VarInt
 from codec.data_types.primitives.unsigned_short import UnsignedShort
 from codec.data_types.primitives.string import String
-from codec.data_types.primitives.varint import VarInt
 
 
-@dataclass(slots=True)
 class LegacyServerListPing(Packet):
-    """Represents the Legacy Server List Ping packet (pre-Netty, Minecraft <= 1.6).
+    """
+    Legacy Server List Ping packet (pre-Netty, Minecraft <= 1.6).
 
-    Encoding:
-        - Packet ID: 0xFE
-        - Payload: Unsigned Byte, always 0x01
-        - Plugin Message: 0xFA
-            - Length of following string: 11 (MC|PingHost)
-            - String: "MC|PingHost" encoded in UTF-16BE
-            - Data length: 7 + len(hostname in bytes)
-            - Protocol version: 1 byte
-            - Hostname length: short (code units)
-            - Hostname: UTF-16BE
-            - Port: 4-byte int, big-endian
+    Packet ID:
+        0xFE
+    State:
+        Status (legacy)
+    Bound:
+        Serverbound
 
-    Attributes:
+    Fields:
         hostname (str): Hostname or IP of the server.
         port (int): Port of the server (default 25565).
-        protocol_version (int): Minecraft protocol version (e.g., 74).
+        protocol_version (int): Minecraft protocol version (default 74).
     """
 
-    hostname: str
-    port: int = 25565
-    protocol_version: int = 74
+    __slots__ = (
+        "hostname",
+        "port",
+        "protocol_version",
+    )
 
-    def __post_init__(self):
-        super().__init__(VarInt(0xFE))
+    def __init__(
+        self,
+        hostname: str,
+        port: int = 25565,
+        protocol_version: int = 74,
+    ) -> None:
+        super().__init__(packet_id=VarInt(0xFE))
 
-        """Validate fields after initialization."""
-        if not (0 < self.port <= 65535):
-            raise ValueError(f"Port must be 1-65535, got {self.port}")
-        if self.protocol_version < 0:
-            raise ValueError(
-                f"Protocol version must be non-negative, got {self.protocol_version}"
-            )
-        if not self.hostname:
+        if not hostname:
             raise ValueError("Hostname cannot be empty")
+        if not (0 < port <= 65535):
+            raise ValueError(f"Port must be in range 1-65535, got {port}")
+        if protocol_version < 0:
+            raise ValueError(
+                f"Protocol version must be non-negative, got {protocol_version}"
+            )
+
+        self.hostname = hostname
+        self.port = port
+        self.protocol_version = protocol_version
 
     def _iter_fields(self):
-        """Yield the serialized fields in order."""
-        # Packet ID
+        """
+        Yield packet payload fields in wire order.
+        """
+        # Packet ID (legacy, not VarInt-prefixed)
         yield b"\xfe"
-        # Payload
+
+        # Payload discriminator
         yield b"\x01"
-        # Plugin Message
+
+        # Plugin message identifier
         yield b"\xfa"
-        # Length of "MC|PingHost" in code units (16-bit big-endian)
-        yield UnsignedShort(11).__bytes__()
-        # String "MC|PingHost" encoded UTF-16BE
+
+        # Length of "MC|PingHost" in UTF-16 code units
+        yield bytes(UnsignedShort(11))
+
+        # "MC|PingHost" encoded in UTF-16BE
         yield String("MC|PingHost").value.encode("utf-16-be")
-        # Length of rest of the data: 7 + len(hostname UTF-16BE)
+
+        # Hostname encoded in UTF-16BE
         hostname_bytes = self.hostname.encode("utf-16-be")
-        yield UnsignedShort(7 + len(hostname_bytes)).__bytes__()
-        # Protocol version
+
+        # Length of remaining data
+        yield bytes(UnsignedShort(7 + len(hostname_bytes)))
+
+        # Protocol version (1 byte)
         yield self.protocol_version.to_bytes(1, "big")
-        # Hostname length in code units
-        yield UnsignedShort(len(self.hostname)).__bytes__()
-        # Hostname UTF-16BE
+
+        # Hostname length in UTF-16 code units
+        yield bytes(UnsignedShort(len(self.hostname)))
+
+        # Hostname bytes
         yield hostname_bytes
+
         # Port (4 bytes, big-endian)
         yield self.port.to_bytes(4, "big")
 
     def __bytes__(self) -> bytes:
-        """Convert the packet to its raw byte representation."""
+        """
+        Return the raw packet byte representation.
+
+        Returns:
+            Serialized packet bytes.
+        """
         return b"".join(self._iter_fields())

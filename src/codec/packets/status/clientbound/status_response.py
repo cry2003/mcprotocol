@@ -9,14 +9,17 @@ from codec.data_types.primitives.string import String
 
 class StatusResponse(Packet):
     """
-    Status Response packet (clientbound).
+    Status Response packet.
 
-    Packet ID: 0x00
-    State: Status
-    Bound to: Client
+    Packet ID:
+        0x00
+    State:
+        Status
+    Bound:
+        Clientbound
 
-    Contains a JSON-formatted string describing server status.
-    The string is encoded as a Minecraft String (VarInt length + UTF-8 bytes).
+    Fields:
+        json_response (String): JSON-encoded server status information, including MOTD, players, version, and favicon.
     """
 
     __slots__ = (

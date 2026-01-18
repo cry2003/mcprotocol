@@ -7,13 +7,17 @@ from codec.data_types.primitives.varint import VarInt
 
 class PongResponse(Packet):
     """
-    Pong Response packet (clientbound).
+    Pong Response packet.
 
-    Packet ID: 0x01
-    State: Status
-    Bound to: Client
+    Packet ID:
+        0x01
+    State:
+        Status
+    Bound:
+        Clientbound
 
-    Contains the timestamp payload sent by the client in Ping Request.
+    Fields:
+        timestamp (Long): The timestamp returned by the server, copied from the request.
     """
 
     __slots__ = ("timestamp",)

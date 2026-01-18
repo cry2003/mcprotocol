@@ -6,14 +6,17 @@ from codec.data_types.primitives.varint import VarInt
 
 class StatusRequest(Packet):
     """
-    Status Request packet (serverbound).
+    Status Request packet.
 
-    Packet ID: 0x00
-    State: Status
-    Bound to: Server
+    Packet ID:
+        0x00
+    State:
+        Status
+    Bound:
+        Serverbound
 
-    This packet has no fields. It is sent immediately after the handshake
-    to request the server status.
+    Fields:
+        None
     """
 
     __slots__ = ()
