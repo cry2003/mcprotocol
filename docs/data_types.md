@@ -85,7 +85,7 @@ All implemented primitive types follow these rules:
       <td>Byte</td>
       <td>1</td>
       <td>Signed 8-bit integer (-128 to 127)</td>
-      <td>Pending</td>
+      <td>Implemented</td>
     </tr>
     <tr>
       <td>Unsigned Byte</td>
@@ -245,12 +245,12 @@ All implemented primitive types follow these rules:
     <tr>
       <td>Array of X</td>
       <td>length × size of X</td>
-      <td>Pending</td>
+      <td>Implemented</td>
     </tr>
     <tr>
       <td>Prefixed Array of X</td>
       <td>VarInt length + size of X × length</td>
-      <td>Pending</td>
+      <td>Implemented</td>
     </tr>
     <tr>
       <td>X Enum</td>
