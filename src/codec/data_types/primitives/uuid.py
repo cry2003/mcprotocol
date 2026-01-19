@@ -19,7 +19,7 @@ class UUID:
 
     Serialization:
         - `__bytes__()` returns the 16-byte network-ready UUID.
-        - `decode(buf, offset=0)` decodes UUID from buffer.
+        - `from_bytes(buf, offset=0)` decodes UUID from buffer.
 
     Validation:
         - Ensures `value` is a valid PyUUID instance.
@@ -29,11 +29,7 @@ class UUID:
     value: PyUUID
 
     def __post_init__(self) -> None:
-        """Ensure that the UUID is a PyUUID instance.
-
-        Raises:
-            ValueError: If the provided value is not a valid UUID string or PyUUID.
-        """
+        """Ensure that the UUID is a PyUUID instance."""
         object.__setattr__(
             self,
             "value",
@@ -51,25 +47,21 @@ class UUID:
         return int.from_bytes(self.value.bytes[8:], byteorder="big", signed=False)
 
     def __bytes__(self) -> bytes:
-        """Return the 16-byte big-endian representation of the UUID.
-
-        Returns:
-            bytes: 16-byte UUID ready for network transmission.
-        """
+        """Return the 16-byte big-endian representation of the UUID."""
         return self.value.bytes
 
     @classmethod
-    def decode(
+    def from_bytes(
         cls, buf: Union[bytes, memoryview], offset: int = 0
     ) -> Tuple["UUID", int]:
-        """Decode a UUID from a 16-byte buffer.
+        """Deserialize a UUID from a 16-byte buffer.
 
         Args:
             buf (bytes | memoryview): Buffer containing the UUID.
             offset (int, optional): Start position in buffer. Defaults to 0.
 
         Returns:
-            Tuple[UUID, int]: Decoded UUID instance and number of bytes consumed (16).
+            Tuple[UUID, int]: Decoded UUID instance and bytes consumed (16).
 
         Raises:
             ValueError: If there are fewer than 16 bytes available from the offset.
