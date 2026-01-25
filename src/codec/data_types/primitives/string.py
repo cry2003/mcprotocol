@@ -23,7 +23,7 @@ class String:
 
     Serialization:
         - `__bytes__()` returns VarInt length + UTF-8 bytes.
-        - `from_bytes(data, offset=0)` parses a string from a byte buffer.
+        - `from_bytes(data)` parses a string from a byte buffer.
 
     Validation:
         - Raises ValueError if string exceeds UTF-16 or UTF-8 limits.
@@ -72,24 +72,26 @@ class String:
         return length_prefix + utf8_bytes
 
     @classmethod
-    def from_bytes(cls, data: bytes, offset: int = 0) -> tuple["String", int]:
-        """Deserialize a String from a byte buffer starting at `offset`.
+    def from_bytes(cls, data: bytes) -> "String":
+        """Deserialize a String from a byte buffer.
 
         Args:
             data (bytes): Byte buffer containing the string.
-            offset (int, optional): Starting index in the buffer. Defaults to 0.
 
         Returns:
-            tuple[String, int]: A tuple containing:
-                - String instance
-                - Number of bytes consumed (length VarInt + UTF-8 string)
+            String: String instance.
 
         Raises:
             ValueError: If data is too short for the expected string length.
         """
-        length_varint, varint_size = VarInt.from_bytes(data, offset)
+        length_varint = VarInt.from_bytes(data)
         str_len = length_varint.value
-        start = offset + varint_size
+        
+        # Calculate how many bytes the VarInt consumed
+        varint_bytes = bytes(length_varint)
+        varint_size = len(varint_bytes)
+        
+        start = varint_size
         end = start + str_len
 
         if len(data) < end:
@@ -97,5 +99,4 @@ class String:
 
         utf8_bytes = data[start:end]
         value = utf8_bytes.decode("utf-8")
-        total_consumed = varint_size + str_len
-        return cls(value), total_consumed
+        return cls(value)

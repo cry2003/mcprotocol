@@ -17,7 +17,7 @@ class Byte:
 
     Serialization:
         - `__bytes__()` encodes the integer as a single byte.
-        - `from_bytes(data, offset=0)` decodes the byte from a buffer.
+        - `from_bytes(data)` decodes the byte from a buffer.
 
     Validation:
         - Raises ValueError if the value is outside -128..127.
@@ -43,20 +43,19 @@ class Byte:
         return self.value.to_bytes(1, byteorder="big", signed=True)
 
     @classmethod
-    def from_bytes(cls, data: bytes, offset: int = 0) -> tuple["Byte", int]:
-        """Deserialize a Byte from a byte buffer starting at `offset`.
+    def from_bytes(cls, data: bytes) -> "Byte":
+        """Deserialize a Byte from a byte buffer.
 
         Args:
-            data (bytes): Byte buffer.
-            offset (int): Start index.
+            data (bytes): Byte buffer containing at least 1 byte.
 
         Returns:
-            tuple[Byte, int]: Byte instance and number of bytes consumed (1).
+            Byte: Byte instance.
 
         Raises:
             ValueError: If buffer is too short.
         """
-        if len(data) < offset + 1:
+        if len(data) < 1:
             raise ValueError("Data too short to read a Byte")
-        value = int.from_bytes(data[offset : offset + 1], byteorder="big", signed=True)
-        return cls(value), 1
+        value = int.from_bytes(data[:1], byteorder="big", signed=True)
+        return cls(value)

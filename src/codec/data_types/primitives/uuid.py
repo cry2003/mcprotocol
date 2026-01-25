@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from uuid import UUID as PyUUID
-from typing import Union, Tuple
+from typing import Union
 
 
 @dataclass(slots=True, frozen=True)
@@ -19,7 +19,7 @@ class UUID:
 
     Serialization:
         - `__bytes__()` returns the 16-byte network-ready UUID.
-        - `from_bytes(buf, offset=0)` decodes UUID from buffer.
+        - `from_bytes(buf)` decodes UUID from buffer.
 
     Validation:
         - Ensures `value` is a valid PyUUID instance.
@@ -52,23 +52,22 @@ class UUID:
 
     @classmethod
     def from_bytes(
-        cls, buf: Union[bytes, memoryview], offset: int = 0
-    ) -> Tuple["UUID", int]:
-        """Deserialize a UUID from a 16-byte buffer.
+        cls, buf: Union[bytes, memoryview]
+    ) -> "UUID":
+        """Deserialize a UUID from a byte buffer.
 
         Args:
-            buf (bytes | memoryview): Buffer containing the UUID.
-            offset (int, optional): Start position in buffer. Defaults to 0.
+            buf (bytes | memoryview): Buffer containing at least 16 bytes.
 
         Returns:
-            Tuple[UUID, int]: Decoded UUID instance and bytes consumed (16).
+            UUID: Decoded UUID instance.
 
         Raises:
-            ValueError: If there are fewer than 16 bytes available from the offset.
+            ValueError: If there are fewer than 16 bytes in the buffer.
         """
-        if len(buf) - offset < 16:
+        if len(buf) < 16:
             raise ValueError(
-                f"Buffer too small to decode UUID: need 16 bytes from offset {offset}"
+                f"Buffer too small to decode UUID: need 16 bytes"
             )
-        raw = bytes(buf[offset : offset + 16])
-        return cls(PyUUID(bytes=raw)), 16
+        raw = bytes(buf[:16])
+        return cls(PyUUID(bytes=raw))

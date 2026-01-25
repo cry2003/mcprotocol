@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass
 from ..constants import _SEGMENT_BITS, _CONTINUE_BIT, _MAX_VARLONG
-from typing import Tuple
 
 
 @dataclass(slots=True, frozen=True)
@@ -19,7 +18,7 @@ class VarLong:
 
     Serialization:
         - `__bytes__()` encodes the integer into VarLong format.
-        - `from_bytes(data, offset=0)` decodes VarLong from a byte buffer.
+        - `from_bytes(data)` decodes VarLong from a byte buffer.
 
     Validation:
         - Raises ValueError if the value is out of range.
@@ -54,27 +53,26 @@ class VarLong:
         return bytes(result)
 
     @classmethod
-    def from_bytes(cls, data: bytes, offset: int = 0) -> Tuple["VarLong", int]:
-        """Deserialize a VarLong from bytes starting at `offset`.
+    def from_bytes(cls, data: bytes) -> "VarLong":
+        """Deserialize a VarLong from bytes.
 
         Args:
             data (bytes): Byte buffer containing the VarLong.
-            offset (int, optional): Start position to read from. Defaults to 0.
 
         Returns:
-            Tuple[VarLong, int]: Decoded VarLong and number of bytes consumed.
+            VarLong: Decoded VarLong instance.
 
         Raises:
             ValueError: If VarLong is too long (>10 bytes) or incomplete.
         """
         num_read = 0
         result = 0
-        for b in data[offset:]:
+        for b in data:
             value = b & _SEGMENT_BITS
             result |= value << (7 * num_read)
             num_read += 1
             if num_read > 10:
                 raise ValueError("VarLong too long (max 10 bytes)")
             if (b & _CONTINUE_BIT) == 0:
-                return cls(result), num_read
+                return cls(result)
         raise ValueError("Incomplete VarLong bytes")

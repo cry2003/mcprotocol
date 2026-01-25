@@ -18,7 +18,7 @@ class VarInt:
 
     Serialization:
         - `__bytes__()` encodes the integer into VarInt format.
-        - `from_bytes(data, offset=0)` decodes VarInt from a byte buffer.
+        - `from_bytes(data)` decodes VarInt from a byte buffer.
 
     Validation:
         - Raises ValueError if the value is out of range.
@@ -53,28 +53,27 @@ class VarInt:
         return bytes(result)
 
     @classmethod
-    def from_bytes(cls, data: bytes, offset: int = 0) -> tuple["VarInt", int]:
+    def from_bytes(cls, data: bytes) -> "VarInt":
         """
-        Decodes a VarInt from bytes starting at `offset`.
+        Decodes a VarInt from bytes.
 
         Args:
             data (bytes): Byte sequence containing the VarInt.
-            offset (int): Start position to read from.
 
         Returns:
-            tuple[VarInt, int]: Decoded VarInt and number of bytes consumed.
+            VarInt: Decoded VarInt instance.
 
         Raises:
             ValueError: If the VarInt is too long (>5 bytes) or incomplete.
         """
         num_read = 0
         result = 0
-        for b in data[offset:]:
+        for b in data:
             value = b & _SEGMENT_BITS
             result |= value << (7 * num_read)
             num_read += 1
             if num_read > 5:
                 raise ValueError("VarInt too long (max 5 bytes)")
             if (b & _CONTINUE_BIT) == 0:
-                return cls(result), num_read
+                return cls(result)
         raise ValueError("Incomplete VarInt bytes")

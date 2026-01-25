@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass
 import struct
-from typing import Tuple
 
 
 @dataclass(slots=True, frozen=True)
@@ -20,7 +19,7 @@ class UnsignedShort:
 
     Serialization:
         - `__bytes__()` returns the 2-byte big-endian value.
-        - `from_bytes(data, offset=0)` deserializes from a 2-byte buffer.
+        - `from_bytes(data)` deserializes from a byte buffer.
     """
 
     value: int
@@ -43,20 +42,19 @@ class UnsignedShort:
         return struct.pack(">H", self.value)
 
     @classmethod
-    def from_bytes(cls, data: bytes, offset: int = 0) -> Tuple["UnsignedShort", int]:
-        """Deserialize an UnsignedShort from a byte buffer starting at `offset`.
+    def from_bytes(cls, data: bytes) -> "UnsignedShort":
+        """Deserialize an UnsignedShort from a byte buffer.
 
         Args:
-            data (bytes): Byte buffer containing the value.
-            offset (int): Starting index.
+            data (bytes): Byte buffer containing at least 2 bytes.
 
         Returns:
-            Tuple[UnsignedShort, int]: UnsignedShort instance and bytes consumed (2).
+            UnsignedShort: UnsignedShort instance.
 
         Raises:
             ValueError: If buffer is too short to read 2 bytes.
         """
-        if len(data) < offset + 2:
+        if len(data) < 2:
             raise ValueError("Data too short to read UnsignedShort")
-        value = struct.unpack_from(">H", data, offset)[0]
-        return cls(value), 2
+        value = struct.unpack_from(">H", data)[0]
+        return cls(value)

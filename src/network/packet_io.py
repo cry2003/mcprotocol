@@ -83,14 +83,15 @@ class PacketIO:
         Raises:
             ValueError: If packet length exceeds limits.
         """
-        packet_length, cursor = VarInt.from_bytes(raw_bytes, 0)
+        packet_length = VarInt.from_bytes(raw_bytes)
         if packet_length.value > _MAX_VARINT_3_BYTES:
             raise ValueError(f"Packet length too large: {packet_length.value}")
 
+        cursor = len(bytes(packet_length))
         packet_bytes = raw_bytes[cursor : cursor + packet_length.value]
 
-        packet_id, pid_size = VarInt.from_bytes(packet_bytes, 0)
-        packet_data = packet_bytes[pid_size:]
+        packet_id = VarInt.from_bytes(packet_bytes)
+        packet_data = packet_bytes[len(bytes(packet_id)):]
 
         return self.registry.instantiate(
             state=self._state,
@@ -131,7 +132,7 @@ class PacketIO:
         else:
             raise ValueError("VarInt length exceeds 3 bytes")
 
-        packet_length, _ = VarInt.from_bytes(raw_length, 0)
+        packet_length = VarInt.from_bytes(raw_length)
         if packet_length.value > _MAX_VARINT_3_BYTES:
             raise ValueError(f"Packet length too large: {packet_length.value}")
 

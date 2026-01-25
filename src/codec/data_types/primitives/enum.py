@@ -1,7 +1,7 @@
 # src/codec/data_types/primitives/enum.py
 
 from dataclasses import dataclass
-from typing import Type, Tuple
+from typing import Type
 
 
 @dataclass(slots=True, frozen=True)
@@ -33,15 +33,14 @@ class Enum:
         return bytes(self.base_type(self.value))
 
     @classmethod
-    def from_bytes(cls, data: bytes, offset: int = 0) -> Tuple["Enum", int]:
-        """Deserialize an Enum from a byte buffer starting at `offset`.
+    def from_bytes(cls, data: bytes) -> "Enum":
+        """Deserialize an Enum from a byte buffer.
 
         Args:
             data (bytes): Byte buffer containing the enum.
-            offset (int, optional): Starting index. Defaults to 0.
 
         Returns:
-            Tuple[Enum, int]: Enum instance and number of bytes consumed.
+            Enum: Enum instance.
         """
-        base_instance, consumed = cls.base_type.from_bytes(data, offset)
-        return cls(base_instance.value, cls.base_type), consumed
+        base_instance = cls.base_type.from_bytes(data)
+        return cls(base_instance.value, cls.base_type)
