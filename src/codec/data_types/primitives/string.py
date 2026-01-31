@@ -3,10 +3,11 @@
 from dataclasses import dataclass
 from .varint import VarInt
 from ..constants import _DEFAULT_MAX_CODE_UNITS
+from ..data_types import DataType
 
 
 @dataclass(slots=True, frozen=True)
-class String:
+class String(DataType):
     """Represents a UTF-8 string in Minecraft protocol format.
 
     Encoding:

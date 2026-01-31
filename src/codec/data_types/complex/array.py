@@ -2,12 +2,13 @@
 
 from dataclasses import dataclass
 from typing import Generic, TypeVar, List
+from ..data_types import DataType
 
 X = TypeVar("X")
 
 
 @dataclass(slots=True, frozen=True)
-class Array(Generic[X]):
+class Array(Generic[X], DataType):
     """
     Represents an array of X with no length prefix.
 

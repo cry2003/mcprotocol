@@ -2,9 +2,11 @@
 
 from dataclasses import dataclass
 
+from ..data_types import DataType
+
 
 @dataclass(slots=True, frozen=True)
-class Byte:
+class Byte(DataType):
     """Represents a single signed byte in Minecraft protocol.
 
     Encoding:

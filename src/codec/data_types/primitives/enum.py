@@ -2,10 +2,11 @@
 
 from dataclasses import dataclass
 from typing import Type
+from ..data_types import DataType
 
 
 @dataclass(slots=True, frozen=True)
-class Enum:
+class Enum(DataType):
     """Represents an enumerated value in Minecraft protocol format.
 
     Encoding:

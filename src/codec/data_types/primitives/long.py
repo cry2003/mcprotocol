@@ -1,10 +1,11 @@
 from dataclasses import dataclass
 import struct
 from ..constants import _MAX_LONG, _MIN_LONG
+from ..data_types import DataType
 
 
 @dataclass(slots=True, frozen=True)
-class Long:
+class Long(DataType):
     """Represents a signed 64-bit integer in Minecraft protocol format.
 
     Range:

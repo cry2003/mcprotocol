@@ -2,9 +2,11 @@
 
 from dataclasses import dataclass
 
+from ..data_types import DataType
+
 
 @dataclass(slots=True, frozen=True)
-class Boolean:
+class Boolean(DataType):
     """Represents a Boolean in the Minecraft protocol.
 
     Encoding:

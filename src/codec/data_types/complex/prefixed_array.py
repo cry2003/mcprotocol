@@ -5,12 +5,13 @@ from typing import Generic, TypeVar
 
 from codec.data_types.primitives.varint import VarInt
 from codec.data_types.complex.array import Array
+from codec.data_types.data_types import DataType
 
 X = TypeVar("X")
 
 
 @dataclass(slots=True, frozen=True)
-class PrefixedArray(Generic[X]):
+class PrefixedArray(Generic[X], DataType):
     """Represents a length-prefixed array in the Minecraft protocol.
 
     Encoding:

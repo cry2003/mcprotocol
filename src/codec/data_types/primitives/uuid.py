@@ -3,10 +3,11 @@
 from dataclasses import dataclass
 from uuid import UUID as PyUUID
 from typing import Union
+from ..data_types import DataType
 
 
 @dataclass(slots=True, frozen=True)
-class UUID:
+class UUID(DataType):
     """Represents a 128-bit UUID in Minecraft protocol format.
 
     Encoding:

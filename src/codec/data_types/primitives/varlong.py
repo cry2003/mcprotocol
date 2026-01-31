@@ -2,10 +2,11 @@
 
 from dataclasses import dataclass
 from ..constants import _SEGMENT_BITS, _CONTINUE_BIT, _MAX_VARLONG
+from ..data_types import DataType
 
 
 @dataclass(slots=True, frozen=True)
-class VarLong:
+class VarLong(DataType):
     """Represents a variable-length 64-bit signed integer in Minecraft protocol.
 
     Encoding:
