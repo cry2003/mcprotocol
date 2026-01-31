@@ -1,59 +1,79 @@
-# src/codec/data_types/complex/array.py
+# src/codec/data_types/complex/prefixed_array.py
 
 from dataclasses import dataclass
-from typing import Type, List, Tuple
-from ..primitives.varint import VarInt
+from typing import Generic, TypeVar
+
+from codec.data_types.primitives.varint import VarInt
+from codec.data_types.complex.array import Array
+
+X = TypeVar("X")
 
 
 @dataclass(slots=True, frozen=True)
-class PrefixedArray:
-    """Represents a length-prefixed array of elements in Minecraft protocol.
+class PrefixedArray(Generic[X]):
+    """Represents a length-prefixed array in the Minecraft protocol.
 
     Encoding:
-        - VarInt length prefix
-        - Consecutive serialization of elements
-        - Total size = size of VarInt + sum of element sizes
+        - The array is prefixed with its length encoded as a VarInt.
+        - Followed by `length` consecutive elements of type X.
+        - All elements MUST be of the same type.
+
+    Layout:
+        Length (VarInt)
+        Data   (Array of X)
 
     Attributes:
-        elements (List): List of elements of the specified type.
-        element_type (Type): Primitive type of the elements. Must implement `__bytes__` and `from_bytes`.
+        values (list[X]): List of deserialized elements.
 
     Serialization:
-        - __bytes__() returns VarInt length + bytes of all elements.
-        - from_bytes(data, offset=0) reads VarInt length and then elements.
+        - `__bytes__()` encodes the array length as VarInt,
+          followed by the serialized bytes of each element.
+
+    Deserialization:
+        - `from_bytes(data, element_type)` reads:
+            1. The VarInt length prefix.
+            2. Exactly `length` elements of type `element_type`.
+        - The number of elements is determined exclusively by the length prefix.
 
     Validation:
-        - Ensures all elements are of the specified type.
-        - Raises ValueError if buffer too short.
+        - Raises exceptions if the buffer does not contain enough bytes
+          to deserialize all elements.
+        - Ensures protocol-compliant, sequential decoding.
     """
 
-    elements: List
-    element_type: Type
-
-    def __post_init__(self):
-        for el in self.elements:
-            if not isinstance(el, self.element_type):
-                raise ValueError(
-                    f"All elements must be of type {self.element_type.__name__}"
-                )
+    values: list[X]
 
     def __bytes__(self) -> bytes:
-        length_bytes = bytes(VarInt(len(self.elements)))
-        result = bytearray(length_bytes)
-        for el in self.elements:
-            result.extend(bytes(el))
-        return bytes(result)
+        """Serialize the prefixed array.
+
+        Returns:
+            bytes: VarInt length prefix followed by serialized elements.
+        """
+        length = VarInt(len(self.values))
+        return bytes(length) + bytes(Array(self.values))
 
     @classmethod
-    def from_bytes(cls, data: bytes, offset: int = 0) -> Tuple["PrefixedArray", int]:
-        length_varint, varint_size = VarInt.from_bytes(data, offset)
-        length = length_varint.value
-        elements = []
-        total_consumed = varint_size
+    def from_bytes(
+        cls,
+        data: bytes,
+        element_type: type[X],
+    ) -> "PrefixedArray[X]":
+        """Deserialize a length-prefixed array from a byte buffer.
 
-        for _ in range(length):
-            el, consumed = cls.element_type.from_bytes(data, offset + total_consumed)
-            elements.append(el)
-            total_consumed += consumed
+        Args:
+            data (bytes): Byte buffer containing the prefixed array.
+            element_type (type[X]): Type used to deserialize each element.
 
-        return cls(elements, cls.element_type), total_consumed
+        Returns:
+            PrefixedArray[X]: Deserialized array instance.
+        """
+        length = VarInt.from_bytes(data)
+        offset = len(bytes(length))
+
+        array = Array.from_bytes(
+            data=data[offset:],
+            element_type=element_type,
+            length=length.value,
+        )
+
+        return cls(array.values)
