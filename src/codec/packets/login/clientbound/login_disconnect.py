@@ -22,11 +22,11 @@ class LoginDisconnect(Packet):
 
     __slots__ = ("reason",)
 
-    def __init__(self, reason: str) -> None:
+    def __init__(self, data: bytes) -> None:
         super().__init__(packet_id=VarInt(0x00))
 
         # JSON Text Component
-        self.reason = JsonTextComponent(reason)
+        self.reason = JsonTextComponent.from_bytes(data)
 
     def _iter_fields(self):
         # Serialization order must match protocol specification
