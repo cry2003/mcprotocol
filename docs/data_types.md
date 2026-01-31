@@ -195,7 +195,7 @@ All implemented primitive types follow these rules:
     <tr>
       <td>JSON Text Component</td>
       <td>≥1 ≤ (262144×3)+3</td>
-      <td>Pending</td>
+      <td>Implemented</td>
     </tr>
     <tr>
       <td>Identifier</td>
