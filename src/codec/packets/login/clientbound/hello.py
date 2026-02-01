@@ -16,7 +16,7 @@ class Hello(Packet):
     State:
         Login
     Bound:
-        Clientbound (Server -> Client)
+        Clientbound
 
     Fields:
         server_id (String): Server ID (max 20 chars, empty for vanilla)

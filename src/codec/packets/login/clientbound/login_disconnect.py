@@ -14,7 +14,7 @@ class LoginDisconnect(Packet):
     State:
         Login
     Bound:
-        Clientbound (Server -> Client)
+        Clientbound
 
     Fields:
         reason (JsonTextComponent): The JSON-formatted reason why the player was disconnected.
