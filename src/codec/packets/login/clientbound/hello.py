@@ -1,7 +1,5 @@
 # src/codec/packets/login/clientbound/hello.py
 
-from typing import Iterable
-
 from codec.packets.packet import Packet
 from codec.data_types.primitives.varint import VarInt
 from codec.data_types.primitives.string import String
@@ -11,7 +9,7 @@ from codec.data_types.complex.prefixed_array import PrefixedArray
 
 
 class Hello(Packet):
-    """Login Hello packet (clientbound).
+    """Login Hello packet (clientbound, Encryption Request).
 
     Packet ID:
         0x01
@@ -21,10 +19,10 @@ class Hello(Packet):
         Clientbound (Server -> Client)
 
     Fields:
-        server_id (String): Server ID (max 20 characters, empty for vanilla).
-        public_key (PrefixedArray[Byte]): Server public key bytes.
-        verify_token (PrefixedArray[Byte]): Verification token bytes.
-        should_authenticate (Boolean): Whether Mojang authentication is required.
+        server_id (String): Server ID (max 20 chars, empty for vanilla)
+        public_key (PrefixedArray[Byte]): Server public key bytes
+        verify_token (PrefixedArray[Byte]): Verification token bytes
+        should_authenticate (Boolean): Whether Mojang authentication is required
     """
 
     __slots__ = (
@@ -34,21 +32,25 @@ class Hello(Packet):
         "should_authenticate",
     )
 
-    def __init__(
-        self,
-        server_id: str,
-        public_key: Iterable[int],
-        verify_token: Iterable[int],
-        should_authenticate: bool,
-    ) -> None:
+    def __init__(self, data: bytes) -> None:
         super().__init__(packet_id=VarInt(0x01))
+        offset = 0
 
-        self.server_id = String(server_id)
+        # Parse server_id using existing String.from_bytes
+        self.server_id = String.from_bytes(data[offset:])
+        offset += len(bytes(self.server_id))
 
-        self.public_key = PrefixedArray([Byte(b) for b in public_key])
-        self.verify_token = PrefixedArray([Byte(b) for b in verify_token])
+        # Parse public_key
+        self.public_key = PrefixedArray.from_bytes(data[offset:], element_type=Byte)
+        offset += len(bytes(self.public_key))
 
-        self.should_authenticate = Boolean(should_authenticate)
+        # Parse verify_token
+        self.verify_token = PrefixedArray.from_bytes(data[offset:], element_type=Byte)
+        offset += len(bytes(self.verify_token))
+
+        # Parse should_authenticate
+        self.should_authenticate = Boolean.from_bytes(data[offset:])
+        offset += len(bytes(self.should_authenticate))
 
     def _iter_fields(self):
         yield self.server_id

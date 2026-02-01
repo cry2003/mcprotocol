@@ -1,30 +1,27 @@
 # src/codec/data_types/complex/prefixed_array.py
 
 from dataclasses import dataclass
-from typing import Generic, TypeVar
+from typing import Type, List
 
 from codec.data_types.primitives.varint import VarInt
 from codec.data_types.complex.array import Array
 from ..data_type import DataType
 
-X = TypeVar("X")
-
 
 @dataclass(slots=True, frozen=True)
-class PrefixedArray(Generic[X], DataType):
+class PrefixedArray(DataType):
     """Represents a length-prefixed array in the Minecraft protocol.
 
     Encoding:
         - The array is prefixed with its length encoded as a VarInt.
-        - Followed by `length` consecutive elements of type X.
-        - All elements MUST be of the same type.
+        - Followed by `length` consecutive elements of the same type.
 
     Layout:
         Length (VarInt)
-        Data   (Array of X)
+        Data   (Array of elements)
 
     Attributes:
-        values (list[X]): List of deserialized elements.
+        values (list[DataType]): List of deserialized elements.
 
     Serialization:
         - `__bytes__()` encodes the array length as VarInt,
@@ -42,7 +39,7 @@ class PrefixedArray(Generic[X], DataType):
         - Ensures protocol-compliant, sequential decoding.
     """
 
-    values: list[X]
+    values: List[DataType]
 
     def __bytes__(self) -> bytes:
         """Serialize the prefixed array.
@@ -57,24 +54,22 @@ class PrefixedArray(Generic[X], DataType):
     def from_bytes(
         cls,
         data: bytes,
-        element_type: type[X],
-    ) -> "PrefixedArray[X]":
+        element_type: Type[DataType],
+    ) -> "PrefixedArray":
         """Deserialize a length-prefixed array from a byte buffer.
 
         Args:
             data (bytes): Byte buffer containing the prefixed array.
-            element_type (type[X]): Type used to deserialize each element.
+            element_type (Type[DataType]): Type used to deserialize each element.
 
         Returns:
-            PrefixedArray[X]: Deserialized array instance.
+            PrefixedArray: Deserialized array instance.
         """
         length = VarInt.from_bytes(data)
         offset = len(bytes(length))
 
         array = Array.from_bytes(
-            data=data[offset:],
-            element_type=element_type,
-            length=length.value,
+            data=data[offset:], length=length.value, element_type=element_type
         )
 
         return cls(array.values)

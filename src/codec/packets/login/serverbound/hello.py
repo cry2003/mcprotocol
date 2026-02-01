@@ -4,7 +4,7 @@ from codec.packets.packet import Packet
 from codec.data_types.primitives.string import String
 from codec.data_types.primitives.uuid import UUID
 from codec.data_types.primitives.varint import VarInt
-from uuid import UUID as PyUUID
+from uuid import UUID as PyUUID, uuid5, NAMESPACE_DNS
 
 
 class Hello(Packet):
@@ -32,7 +32,9 @@ class Hello(Packet):
             raise ValueError("Player name cannot exceed 16 characters")
 
         self.name = String(name)
-        self.player_uuid = UUID(player_uuid)
+        self.player_uuid = (
+            UUID(player_uuid) if player_uuid is not None else UUID(uuid5(NAMESPACE_DNS, name))
+        )
 
     def _iter_fields(self):
         """Yield fields in order for serialization."""
