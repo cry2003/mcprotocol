@@ -12,7 +12,7 @@ def main() -> None:
     This script connects to a Hypixel server on mc.hypixel.net:25565,
     sends a handshake and status request, and prints the server response.
     """
-    host = "localhost"
+    host = "mc.hypixel.net"
     port = 25565
     protocol_version = 774
 
@@ -38,12 +38,12 @@ def main() -> None:
 
             # Receive and set compression from Login Compression packet
             login_compression = packet_io.read()
+            print("Login Compression:", login_compression)
             packet_io.set_compression_threshold(login_compression.threshold.value)
             
-            packet_io.send(packet_id="0x03", packet_io=packet_io)
-            
-            response_packet = packet_io.read()
-            print("Server Response:", response_packet)
+            # Read Login Finished packet
+            login_finished = packet_io.read()
+            print("Login Success:", login_finished)
             
 
     except ConnectionRefusedError:
