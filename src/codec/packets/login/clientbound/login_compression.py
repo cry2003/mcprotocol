@@ -6,7 +6,7 @@ from codec.packets.constants import _MAX_PACKET_LENGTH
 
 
 class LoginCompression(Packet):
-    """Set Compression packet (clientbound).
+    """Set Compression packet.
 
     Packet ID:
         0x03

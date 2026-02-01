@@ -7,7 +7,7 @@ from codec.data_types.primitives.varint import VarInt
 
 class LoginDisconnect(Packet):
     """
-    Login Disconnect packet (clientbound).
+    Login Disconnect packet.
 
     Packet ID:
         0x00
