@@ -1,6 +1,6 @@
 from __future__ import annotations
 import struct
-from codec.data_types.data_types import DataType
+from codec.data_types.data_type import DataType
 from codec.data_types.constants import _INT32_MIN, _INT32_MAX
 
 

@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from typing import Generic, TypeVar, List
-from ..data_types import DataType
+from ..data_type import DataType
 
 X = TypeVar("X")
 

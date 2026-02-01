@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import struct
 from ..constants import _MAX_LONG, _MIN_LONG
-from ..data_types import DataType
+from ..data_type import DataType
 
 
 @dataclass(slots=True, frozen=True)

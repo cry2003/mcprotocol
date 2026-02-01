@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 import struct
-from ..data_types import DataType
+from ..data_type import DataType
 
 
 @dataclass(slots=True, frozen=True)

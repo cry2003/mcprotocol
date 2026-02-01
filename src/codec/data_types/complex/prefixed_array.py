@@ -5,7 +5,7 @@ from typing import Generic, TypeVar
 
 from codec.data_types.primitives.varint import VarInt
 from codec.data_types.complex.array import Array
-from codec.data_types.data_types import DataType
+from ..data_type import DataType
 
 X = TypeVar("X")
 

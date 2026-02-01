@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from ..constants import _SEGMENT_BITS, _CONTINUE_BIT, _MAX_VARINT
-from ..data_types import DataType
+from ..data_type import DataType
 
 
 @dataclass(slots=True, frozen=True)

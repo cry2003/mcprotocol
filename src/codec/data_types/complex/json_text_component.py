@@ -3,7 +3,7 @@ from typing import Any
 import json
 import re
 
-from codec.data_types.data_types import DataType
+from codec.data_types.data_type import DataType
 from codec.data_types.primitives.varint import VarInt
 from codec.data_types.primitives.string import String
 from codec.data_types.primitives.boolean import Boolean

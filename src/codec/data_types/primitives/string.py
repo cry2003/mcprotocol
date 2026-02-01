@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from .varint import VarInt
 from ..constants import _DEFAULT_MAX_CODE_UNITS
-from ..data_types import DataType
+from ..data_type import DataType
 
 
 @dataclass(slots=True, frozen=True)

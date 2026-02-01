@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from typing import Type
-from ..data_types import DataType
+from ..data_type import DataType
 
 
 @dataclass(slots=True, frozen=True)

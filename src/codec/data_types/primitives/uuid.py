@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from uuid import UUID as PyUUID
 from typing import Union
-from ..data_types import DataType
+from ..data_type import DataType
 
 
 @dataclass(slots=True, frozen=True)
