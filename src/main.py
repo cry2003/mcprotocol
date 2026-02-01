@@ -36,9 +36,15 @@ def main() -> None:
             # Send Status Request (packet_id=0x00)
             packet_io.send(packet_id="0x00", name="cry2003_bot")
 
-            # Read server response
-            response = packet_io.read() 
-            print("Server Response:", response)
+            # Receive and set compression from Login Compression packet
+            login_compression = packet_io.read()
+            packet_io.set_compression_threshold(login_compression.threshold.value)
+            
+            packet_io.send(packet_id="0x03", packet_io=packet_io)
+            
+            response_packet = packet_io.read()
+            print("Server Response:", response_packet)
+            
 
     except ConnectionRefusedError:
         print(f"Could not connect to {host}:{port}")
