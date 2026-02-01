@@ -277,7 +277,7 @@ All data types in this library inherit from `DataType`, which defines two abstra
     <tr>
       <td>Game Profile</td>
       <td>Varies; UUID + username + properties</td>
-      <td>Pending</td>
+      <td>Implemented</td>
     </tr>
     <tr>
       <td>Resolvable Profile</td>
