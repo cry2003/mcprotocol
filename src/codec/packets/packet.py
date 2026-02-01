@@ -5,37 +5,15 @@ from typing import Iterable, Optional
 import zlib
 
 from codec.data_types.primitives.varint import VarInt
-from codec.packets.constants import _MAX_VARINT_3_BYTES, _MAX_UNCOMPRESSED_SERVERBOUND
+from codec.packets.constants import _MAX_VARINT_3_BYTES
 
 
 class Packet(ABC):
-    """Base class for all Minecraft protocol packets.
-
-    This class defines the common structure and serialization logic
-    for packets used in the Minecraft Java Edition protocol.
-
-    Subclasses must:
-        - define `packet_id: VarInt` (the unique packet identifier)
-        - implement `_iter_fields()` yielding the serialized fields in order
-
-    Attributes:
-        packet_id (VarInt): Unique identifier of the packet as per protocol.
-
-    Serialization:
-        - Handles both uncompressed and optionally compressed packets
-          according to the protocol's compression threshold.
-        - Validates packet size against protocol limits.
-        - Produces bytes ready for transmission over TCP.
-
-    Error handling:
-        - Raises `TypeError` if packet_id is not a VarInt.
-        - Raises `ValueError` if packet length exceeds protocol limits
-          or compression threshold is invalid.
-    """
+    """Base class for all Minecraft protocol packets."""
 
     __slots__ = ("packet_id",)
 
-    def __init__(self, packet_id):
+    def __init__(self, packet_id: VarInt):
         if not isinstance(packet_id, VarInt):
             raise TypeError(
                 f"packet_id must be a VarInt, got {type(packet_id).__name__}"
@@ -44,91 +22,100 @@ class Packet(ABC):
 
     @abstractmethod
     def _iter_fields(self) -> Iterable[bytes]:
-        """Yield serialized packet fields as bytes.
-
-        Subclasses must override this method to yield each field in order.
-
-        Returns:
-            Iterable[bytes]: Serialized fields.
-        """
         raise NotImplementedError
 
     def serialize(self, compression_threshold: Optional[int] = None) -> bytes:
-        """Serialize the packet according to the Minecraft protocol.
+        """Serialize the packet according to the Minecraft protocol."""
 
-        Depending on the compression threshold, this method produces either
-        a compressed or uncompressed packet compliant with the protocol specification.
-
-        Args:
-            compression_threshold: Threshold for compression.
-                - None: compression disabled.
-                - >= 0: packets with body length >= threshold are compressed.
-
-        Returns:
-            bytes: The serialized packet ready to be sent over TCP.
-
-        Raises:
-            ValueError: If packet exceeds protocol size limits or
-                compression threshold is invalid.
-        """
-        # --- Build uncompressed body (Packet ID + Data) ---
+        # --- Build Packet ID + Data ---
         body = bytearray(bytes(self.packet_id))
         for field in self._iter_fields():
             body.extend(bytes(field))
 
         body_len = len(body)
-        if body_len > _MAX_UNCOMPRESSED_SERVERBOUND:
-            raise ValueError(
-                f"Uncompressed packet too large: {body_len} bytes "
-                f"(max {_MAX_UNCOMPRESSED_SERVERBOUND})"
-            )
 
-        # --- Compression disabled ---
+        # Treat negative threshold as compression disabled
+        if compression_threshold is not None and compression_threshold < 0:
+            compression_threshold = None
+
+        # ============================================================
+        # No compression
+        # ============================================================
         if compression_threshold is None:
-            length_prefix = bytes(VarInt(body_len))
-            if len(length_prefix) > 3:
-                raise ValueError(
-                    f"Packet length VarInt exceeds 3 bytes: {len(length_prefix)}"
-                )
             if body_len > _MAX_VARINT_3_BYTES:
                 raise ValueError(
-                    f"Packet length exceeds maximum allowed: {body_len} bytes "
-                    f"(max {_MAX_VARINT_3_BYTES})"
+                    f"Packet length exceeds maximum allowed size: "
+                    f"{body_len} bytes (max {_MAX_VARINT_3_BYTES})"
                 )
-            return length_prefix + body
 
-        if compression_threshold < 0:
-            raise ValueError("compression_threshold must be >= 0 or None")
+            length_prefix = VarInt(body_len)
+            length_bytes = bytes(length_prefix)
 
-        # --- Compression enabled ---
-        if body_len < compression_threshold:
-            # Too small → uncompressed with Data Length = 0
-            data_length = bytes(VarInt(0))
-            packet_length = bytes(VarInt(len(data_length) + body_len))
-            if len(packet_length) > 3:
+            if len(length_bytes) > 3:
                 raise ValueError(
-                    f"Packet Length VarInt exceeds 3 bytes: {len(packet_length)}"
+                    f"Packet Length VarInt exceeds 3 bytes: {len(length_bytes)}"
                 )
-            return packet_length + data_length + body
 
-        # Compress body
-        compressed = zlib.compress(body)
-        data_length = bytes(VarInt(body_len))
-        packet_length = bytes(VarInt(len(data_length) + len(compressed)))
+            return length_bytes + body
 
-        if len(packet_length) > 3:
+        # ============================================================
+        # Compression enabled
+        # ============================================================
+        if body_len < compression_threshold:
+            # Uncompressed packet with Data Length = 0
+            data_length = VarInt(0)
+            packet_length_value = len(bytes(data_length)) + body_len
+
+            if packet_length_value > _MAX_VARINT_3_BYTES:
+                raise ValueError(
+                    f"Packet length exceeds maximum allowed size: "
+                    f"{packet_length_value} bytes (max {_MAX_VARINT_3_BYTES})"
+                )
+
+            packet_length = VarInt(packet_length_value)
+            packet_length_bytes = bytes(packet_length)
+
+            if len(packet_length_bytes) > 3:
+                raise ValueError(
+                    f"Packet Length VarInt exceeds 3 bytes: "
+                    f"{len(packet_length_bytes)}"
+                )
+
+            return packet_length_bytes + bytes(data_length) + body
+
+        # --- Compressed packet ---
+        compressed_body = zlib.compress(body)
+        data_length = VarInt(body_len)
+
+        packet_length_value = len(bytes(data_length)) + len(compressed_body)
+
+        if packet_length_value > _MAX_VARINT_3_BYTES:
             raise ValueError(
-                f"Packet Length VarInt exceeds 3 bytes: {len(packet_length)}"
+                f"Packet length exceeds maximum allowed size: "
+                f"{packet_length_value} bytes (max {_MAX_VARINT_3_BYTES})"
             )
 
-        return packet_length + data_length + compressed
+        packet_length = VarInt(packet_length_value)
+        packet_length_bytes = bytes(packet_length)
+
+        if len(packet_length_bytes) > 3:
+            raise ValueError(
+                f"Packet Length VarInt exceeds 3 bytes: " f"{len(packet_length_bytes)}"
+            )
+
+        return packet_length_bytes + bytes(data_length) + compressed_body
 
     def __str__(self) -> str:
-        """Return a concise representation showing only public fields."""
         fields = (
             f"{name}={getattr(self, name)!r}"
             for name in getattr(self, "__slots__", ())
             if not name.startswith("_") and name != "packet_id"
         )
+        return (
+            f"<{self.__class__.__name__} "
+            f"packet_id={self.packet_id.value:#04x}, "
+            f"{', '.join(fields)}>"
+        )
 
-        return f"<{self.__class__.__name__} packet_id={self.packet_id.value:#04x}, {', '.join(fields)}>"
+    def __repr__(self) -> str:
+        return self.__str__()
