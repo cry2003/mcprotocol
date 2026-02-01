@@ -62,6 +62,14 @@ class PacketIO:
         """
         self._state = new_state
 
+    def set_compression_threshold(self, threshold: int) -> None:
+        """Update the compression threshold.
+
+        Args:
+            threshold: New compression threshold value.
+        """
+        self.compression_threshold = threshold
+
     def _encode_packet(self, packet_id: str, **kwargs) -> bytes:
         """
         Serialize a serverbound packet according to current compression rules.
