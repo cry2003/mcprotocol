@@ -1,4 +1,5 @@
 from __future__ import annotations
+from dataclasses import dataclass
 from typing import Any
 import json
 import re
@@ -18,9 +19,10 @@ from codec.data_types.constants import (
 )
 
 
+@dataclass(slots=True)
 class JsonTextComponent(DataType):
     """Minecraft JSON Text Component.
-    
+
     Supports all content types and formatting options according to Minecraft protocol:
     - Content types: text, translatable, score, selector, keybind, nbt, object
     - Formatting: color, font, bold, italic, underlined, strikethrough, obfuscated, shadow_color
@@ -28,20 +30,21 @@ class JsonTextComponent(DataType):
     - Children: extra (list of child components)
     - Object types: atlas, player
     """
-    __slots__ = ("component",)
 
-    def __init__(self, component: dict | list | str) -> None:
-        if isinstance(component, JsonTextComponent):
+    component: dict | list | str
+
+    def __post_init__(self) -> None:
+        if isinstance(self.component, JsonTextComponent):
             raise TypeError("Nested JsonTextComponent is not allowed")
-        if not isinstance(component, (dict, list, str)):
+        if not isinstance(self.component, (dict, list, str)):
             raise TypeError(
-                f"Component must be dict, list, or str, got {type(component).__name__}"
+                f"Component must be dict, list, or str, got {type(self.component).__name__}"
             )
-        self.component = self._wrap_component(component)
+        self.component = self._wrap_component(self.component)
 
     def _detect_content_type(self, comp: dict) -> str:
         """Auto-detect content type based on present keys.
-        
+
         Precedence order per docs:
         text > translate > score > selector > keybind > nbt > object
         """
@@ -68,11 +71,11 @@ class JsonTextComponent(DataType):
         ]:
             if key in comp:
                 return key
-        
+
         # Check for object type (atlas or player)
         if "object" in comp or "atlas" in comp or "sprite" in comp or "player" in comp:
             return "object"
-        
+
         return "text"  # Default to plain text
 
     def _validate_color(self, color: str) -> None:
@@ -165,7 +168,9 @@ class JsonTextComponent(DataType):
             raise ValueError("Atlas object requires 'sprite' field")
         wrapped = {
             "object": String("atlas"),
-            "atlas": String(atlas_obj.get("atlas", "minecraft:blocks")),  # Default atlas
+            "atlas": String(
+                atlas_obj.get("atlas", "minecraft:blocks")
+            ),  # Default atlas
             "sprite": String(atlas_obj["sprite"]),
         }
         return wrapped
@@ -174,13 +179,13 @@ class JsonTextComponent(DataType):
         """Validate NBT component - must have at least one of block/entity/storage."""
         if "nbt" not in nbt_obj:
             return  # Not an NBT component
-        
+
         # Per docs: "Requires one of [String] block, [String] entity, or [String] storage"
         if not any(key in nbt_obj for key in ["block", "entity", "storage"]):
             raise ValueError(
                 "NBT component must have at least one of: block, entity, or storage"
             )
-        
+
         # Validate source if present
         if "source" in nbt_obj:
             source = nbt_obj["source"]
@@ -204,15 +209,17 @@ class JsonTextComponent(DataType):
         action = value.get("action")
         if action not in _CLICK_EVENTS:
             raise ValueError(f"Invalid click_event action: {action}")
-        
+
         wrapped = {"action": String(action)}
         expected_fields = _CLICK_EVENTS[action]
-        
+
         for key, expected_type in expected_fields.items():
             if key in value:
                 if key == "page":
                     wrapped[key] = Int(value[key])
-                elif key == "url" or key == "path" or key == "command" or key == "value":
+                elif (
+                    key == "url" or key == "path" or key == "command" or key == "value"
+                ):
                     wrapped[key] = String(value[key])
                 elif key == "dialog":
                     # dialog can be string ID or object
@@ -222,7 +229,7 @@ class JsonTextComponent(DataType):
                         wrapped[key] = JsonTextComponent(value[key])
                 else:
                     wrapped[key] = String(str(value[key]))
-        
+
         return wrapped
 
     def _wrap_hover_event(self, value: dict) -> dict:
@@ -230,9 +237,9 @@ class JsonTextComponent(DataType):
         action = value.get("action")
         if action not in _HOVER_EVENTS:
             raise ValueError(f"Invalid hover_event action: {action}")
-        
+
         wrapped = {"action": String(action)}
-        
+
         if action == "show_text":
             # value can be string, list, or object
             if "value" not in value:
@@ -259,7 +266,7 @@ class JsonTextComponent(DataType):
                     wrapped["uuid"] = String(uuid_val)
                 elif isinstance(uuid_val, list):
                     wrapped["uuid"] = Array([Int(v) for v in uuid_val])
-        
+
         return wrapped
 
     def _wrap_component(self, comp: Any) -> Any:
@@ -274,7 +281,7 @@ class JsonTextComponent(DataType):
         if isinstance(comp, dict):
             wrapped: dict[str, Any] = {}
             content_type = self._detect_content_type(comp)
-            
+
             # Validate NBT components early
             self._validate_nbt(comp)
 
@@ -360,19 +367,20 @@ class JsonTextComponent(DataType):
                 else:
                     # Preserve unknown keys as-is
                     wrapped[key] = value
-            
+
             # Apply separator defaults if not provided (for selector and nbt)
             if "separator" not in wrapped and content_type in {"selector", "nbt"}:
                 sep_default = self._get_separator_default(content_type)
                 if sep_default:
                     wrapped["separator"] = JsonTextComponent(sep_default)
-            
+
             return wrapped
 
         raise TypeError(f"Invalid component type: {type(comp).__name__}")
 
     def __bytes__(self) -> bytes:
         """Serialize component to JSON with VarInt length prefix."""
+
         def serialize(obj: Any) -> Any:
             if isinstance(obj, DataType):
                 return bytes(obj)
@@ -392,10 +400,10 @@ class JsonTextComponent(DataType):
     @classmethod
     def from_bytes(cls, data: bytes) -> "JsonTextComponent":
         """Deserialize component from JSON with VarInt length prefix.
-        
+
         Args:
             data: Byte buffer containing VarInt length + JSON bytes
-            
+
         Returns:
             JsonTextComponent instance
         """
