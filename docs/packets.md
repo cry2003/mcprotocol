@@ -1,55 +1,59 @@
 <!-- markdownlint-disable MD033 -->
 
-# Minecraft Protocol Packets - Implementation Status
+# Minecraft Protocol Packets - Implementation Reference
 
-Reference: Java Edition Protocol  
-Source: [Minecraft Wiki – Java Edition Protocol / Packets](https://minecraft.wiki/w/Java_Edition_protocol/Packets)
+This document tracks the implementation status of all Minecraft protocol packets, organized by protocol state and direction.
+
+**Reference:** [Minecraft Wiki – Java Edition Protocol / Packets](https://minecraft.wiki/w/Java_Edition_protocol/Packets)
 
 ---
 
-## Protocol Packet Standards
+## Packet Implementation Overview
+
+| State | Direction | Total | Implemented | Status |
+| ----- | --------- | ----- | ----------- | ------ |
+| **Handshaking** | Serverbound | 2 | 2 ✓ | Complete |
+| **Status** | Serverbound | 2 | 2 ✓ | Complete |
+| **Status** | Clientbound | 2 | 2 ✓ | Complete |
+| **Login** | Serverbound | 3 | 1 | WIP |
+| **Login** | Clientbound | 5 | 1 | WIP |
+| **Play** | Serverbound | 50+ | 0 | TODO |
+| **Play** | Clientbound | 100+ | 0 | TODO |
+| **Configuration** | Serverbound | 2 | 0 | TODO |
+| **Configuration** | Clientbound | 5+ | 0 | TODO |
+
+---
+
+## Implementation Standards
 
 All implemented packets follow these standards:
 
 1. **Packet Identification**
    - Each packet has a unique `packet_id` of type `VarInt`.
-   - Packet ID identifies the packet type and corresponds to its protocol state (`Handshaking`, `Status`, `Login`, `Play`) and direction (`Serverbound` or `Clientbound`).
+   - Packet ID identifies the packet type and corresponds to its protocol state and direction.
 
-2. **State and Bound**
-   - Packets are tied to a protocol state:
-     - `Handshaking`: Initial client-server connection negotiation.
-     - `Status`: Queries for server status and latency.
-     - `Login`: Authentication and session setup.
-     - `Play`: Game actions and world updates.
-   - Packets are either `Serverbound` (sent from client) or `Clientbound` (sent from server).
+2. **State and Direction**
+   - **Handshaking** (0): Initial connection negotiation.
+   - **Status** (1): Server status and latency queries.
+   - **Login** (2): Player authentication and session setup.
+   - **Play** (3): In-game updates and player actions.
+   - **Configuration** (4): Protocol configuration (1.20+).
+   - **Direction**: `Serverbound` (client→server) or `Clientbound` (server→client).
 
-3. **Field Types**
-   - Packet fields are strongly typed and support serialization:
-     - `VarInt`: Variable-length signed integer.
-     - `UnsignedShort`: 16-bit unsigned integer.
-     - `Long`: 64-bit signed integer.
-     - `String`: UTF-8 string with VarInt length prefix.
-     - `Enum`: Restricted set of values stored as VarInt.
-   - Fields are yielded in the order required by the protocol for correct serialization.
+3. **Packet Structure**
+   - All packets inherit from `Packet` base class.
+   - Each packet defines `__slots__` for memory efficiency.
+   - `_iter_fields()` yields fields in exact protocol order.
+   - `serialize(compression_threshold)` handles framing and optional compression.
 
-4. **Initialization and Validation**
-   - Packets validate input on creation (e.g., range checks for enums, correct field types).
-   - Can accept raw bytes for deserialization where appropriate (e.g., server responses).
+4. **Field Validation**
+   - All field values validated at construction time.
+   - Out-of-range values raise `ValueError` with descriptive messages.
+   - Type mismatches raise `TypeError`.
 
-5. **Serialization**
-   - `_iter_fields()` must be implemented to yield fields sequentially.
-   - `serialize()` handles:
-     - Adding the packet length prefix (VarInt).
-     - Optional compression using zlib if packet size exceeds the threshold.
-     - Enforcing protocol size limits for both compressed and uncompressed packets.
-   - Ensures the serialized output is fully compatible with the Minecraft Java protocol.
-
-6. **Memory Optimization**
-   - `__slots__` is used in packet classes to reduce memory footprint and speed up frequent packet instantiation.
-
-7. **Error Handling**
-   - Invalid field types or out-of-range values raise exceptions (`TypeError` or `ValueError`) to prevent malformed packets from being sent.
-   - Compression and packet length are strictly validated to comply with protocol restrictions.
+5. **Testing**
+   - Example test: [debug/test/test_login_disconnect_server.py](../../debug/test/test_login_disconnect_server.py)
+   - Tests verify serialization and real Minecraft server connectivity.
 
 ---
 
@@ -96,7 +100,7 @@ Next State (VarInt)
 
 ## 2. Status
 
-### Clientbound
+### Status Clientbound
 
 <table>
 <thead>
@@ -127,7 +131,7 @@ Next State (VarInt)
 </tbody>
 </table>
 
-### Serverbound
+### Status Serverbound
 
 <table>
 <thead>
@@ -143,7 +147,10 @@ Next State (VarInt)
 <tr>
 <td>Status Request</td>
 <td>0x00</td>
-<td>Pending</td>
+<td>(none)</td>
+<td>Empty packet to request status</td>
+<td>Implemented</td>
+</tr>
 <td>Requests status</td>
 <td>Implemented</td>
 </tr>
@@ -176,17 +183,17 @@ Next State (VarInt)
 </thead>
 <tbody>
 <tr>
-<td>Login Start</td>
+<td>Hello</td>
 <td>0x00</td>
-<td>Player Name (String)</td>
-<td>Initial login</td>
-<td>Pending</td>
+<td>Name (String)<br>UUID (UUID, optional)</td>
+<td>Initial login with username/UUID</td>
+<td>Implemented</td>
 </tr>
 
 <tr>
 <td>Encryption Response</td>
 <td>0x01</td>
-<td>Shared Secret<br>Verify Token</td>
+<td>Shared Secret (PrefixedArray[Byte])<br>Verify Token (PrefixedArray[Byte])</td>
 <td>Online-mode auth</td>
 <td>Pending</td>
 </tr>
@@ -194,7 +201,7 @@ Next State (VarInt)
 <tr>
 <td>Login Plugin Response</td>
 <td>0x02</td>
-<td>Message ID<br>Data</td>
+<td>Message ID (VarInt)<br>Data (PrefixedArray[Byte])</td>
 <td>Custom login plugins</td>
 <td>Pending</td>
 </tr>
@@ -217,28 +224,29 @@ Next State (VarInt)
 <tr>
 <td>Disconnect</td>
 <td>0x00</td>
-<td>Reason (Text)</td>
-<td>Login failure</td>
-<td>Pending</td>
+<td>Reason (JSONTextComponent)</td>
+<td>Login failure message</td>
+<td>Implemented</td>
 </tr>
 
 <tr>
-<td>Encryption Request</td>
+<td>Hello</td>
 <td>0x01</td>
 <td>
-Server ID<br>
-Public Key<br>
-Verify Token
+Server ID (String)<br>
+Public Key (PrefixedArray[Byte])<br>
+Verify Token (PrefixedArray[Byte])<br>
+Should Authenticate (Boolean)
 </td>
-<td>Online-mode</td>
-<td>Pending</td>
+<td>Encryption request</td>
+<td>Implemented</td>
 </tr>
 
 <tr>
 <td>Login Success</td>
 <td>0x02</td>
-<td>UUID<br>Username</td>
-<td>Switches to Play</td>
+<td>UUID (UUID)<br>Username (String)</td>
+<td>Switches to Play state</td>
 <td>Pending</td>
 </tr>
 
@@ -253,8 +261,8 @@ Verify Token
 <tr>
 <td>Login Plugin Request</td>
 <td>0x04</td>
-<td>Message ID<br>Channel<br>Data</td>
-<td>Custom plugins</td>
+<td>Message ID (VarInt)<br>Channel (String)<br>Data (PrefixedArray[Byte])</td>
+<td>Custom authentication plugins</td>
 <td>Pending</td>
 </tr>
 </tbody>

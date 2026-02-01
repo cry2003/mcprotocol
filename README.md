@@ -2,30 +2,39 @@
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue)](LICENSE)
 
-A compact Python library that implements a **Minecraft protocol codec** (Java Edition). The project provides typed primitives, complex types and packet classes for encoding and decoding Minecraft network traffic, following the official protocol specification.
+A compact, type-safe Python library that implements a **Minecraft protocol codec** (Java Edition). The project provides a complete type system with primitives, complex types, and packet classes for encoding and decoding Minecraft network traffic, following the official protocol specification.
 
-- Repository: protocol-compliant encoding/decoding for packet bodies, length framing and optional zlib compression.
-- Goal: safe, testable building blocks for implementing clients, bots, testing tools or servers that speak the Minecraft Java Edition protocol.
+- **Core**: Protocol-compliant encoding/decoding for packet bodies, length framing, and optional zlib compression.
+- **Goal**: Safe, testable building blocks for implementing clients, bots, testing tools, or servers that speak the Minecraft Java Edition protocol.
+- **Architecture**: Clean separation between type definitions, packet structures, and network I/O.
 
 ---
 
 ## Features
 
-- Strictly typed primitive and complex data types:
-  - `Boolean`, `UnsignedShort`, `String`, `UUID`, `VarInt`, `VarLong`, `Long`, `Enum` and more.
+- **Comprehensive type system**:
+  - Primitives: `Boolean`, `Byte`, `Int`, `Long`, `UnsignedShort`, `String`, `UUID`, `VarInt`, `VarLong`, `Enum`, and more.
+  - Complex types: `Array`, `PrefixedArray`, `JSONTextComponent` with automatic serialization.
+  - Base class `DataType` ensures consistent behavior across all types.
 
-- Packet serialization / deserialization:
-  - Support for compressed and uncompressed packets (zlib compression).
-  - Enforces framing rules and size limits (VarInt length prefixes, max body length).
+- **Protocol-compliant packet handling**:
+  - Uncompressed and zlib-compressed packet support with automatic threshold-based switching.
+  - Strict adherence to Minecraft packet framing (VarInt length prefixes, size limits).
+  - Packet ID management and state-aware packet routing.
 
-- Fail-fast data validation:
-  - Strings, integers and UUID values validated at construction time.
+- **Fail-fast validation**:
+  - All values validated at construction time (no silent errors).
+  - Range checking for integers, length validation for strings/arrays.
+  - Descriptive error messages with expected vs. actual values.
 
-- Extensible packet model:
+- **Extensible packet architecture**:
   - Define new packets by subclassing `Packet` and implementing `_iter_fields()`.
+  - Support for both serverbound (client→server) and clientbound (server→client) packets.
+  - Organized by protocol state: Handshaking, Status, Login, Play.
 
-- Small, dependency-free codebase:
-  - Pure Python; no external runtime dependencies required.
+- **Pure Python, dependency-free**:
+  - No external runtime dependencies required.
+  - Python 3.9+ (uses dataclasses with `slots` and `frozen`).
 
 ---
 
@@ -57,47 +66,106 @@ python -m src.main
 
 ## Quickstart
 
-This quickstart shows constructing primitives and serializing a packet. The `Packet` base class handles packet id framing and optional compression. Subclasses provide the `packet_id` and implement `_iter_fields()` to yield serialized field bytes.
+### 1. Using Primitives
 
-### Handshake packet example
-
-Use primitives directly; do not mix raw `to_bytes` calls inside `_iter_fields()` — yield primitives or other bytes-ready objects.
+All primitives inherit from `DataType` and provide `__bytes__()` for serialization and `from_bytes()` for deserialization:
 
 ```python
-from codec.data_types.primitives.varint import VarInt
-from codec.data_types.primitives.string import String
-from codec.data_types.primitives.unsigned_short import UnsignedShort
-from codec.data_types.primitives.enum import Enum
-from codec.packets.packet import Packet
+from src.codec.data_types.primitives.varint import VarInt
+from src.codec.data_types.primitives.string import String
+from src.codec.data_types.primitives.unsigned_short import UnsignedShort
 
-class HandshakePacket(Packet):
-    """
-    Handshake (clientbound or serverbound depending on state) example.
-    Packet ID: 0x00 (VarInt)
-    Fields: protocol_version (VarInt), server_address (String), server_port (UnsignedShort), intent (Enum[VarInt])
-    """
-    def __init__(self, protocol_version: int, server_address: str, server_port: int, intent: int):
-        # packet_id must be provided as VarInt when initializing Packet base
+# Create and serialize primitives
+version = VarInt(773)
+address = String("localhost")
+port = UnsignedShort(25565)
+
+print(bytes(version))   # b'\xf5\x06'
+print(bytes(address))   # VarInt length prefix + UTF-8 encoded string
+print(bytes(port))      # b'\\x64\\x4d' (25565 in big-endian)
+
+# Deserialize
+version_decoded = VarInt.from_bytes(b'\xf5\x06')
+print(version_decoded.value)  # 773
+```
+
+### 2. Creating a Custom Packet
+
+Define packets by subclassing `Packet` and implementing `_iter_fields()`:
+
+```python
+from src.codec.packets.packet import Packet
+from src.codec.data_types.primitives.varint import VarInt
+from src.codec.data_types.primitives.string import String
+from src.codec.data_types.primitives.unsigned_short import UnsignedShort
+from src.codec.data_types.primitives.enum import Enum
+
+class Intention(Packet):
+    """Handshake packet (serverbound, packet state: Handshaking)."""
+    
+    __slots__ = ("protocol_version", "server_address", "server_port", "next_state")
+    
+    def __init__(self, protocol_version: int, server_address: str, server_port: int, next_state: int):
         super().__init__(packet_id=VarInt(0x00))
-
-        # validate intent externally or rely on Enum wrapper
         self.protocol_version = VarInt(protocol_version)
         self.server_address = String(server_address)
         self.server_port = UnsignedShort(server_port)
-        # Enum stores its value and encodes via the specified base type
-        self.intent = Enum(intent, VarInt)
-
+        self.next_state = Enum(next_state, VarInt)  # 1=Status, 2=Login, 3=Transfer
+    
     def _iter_fields(self):
         yield self.protocol_version
         yield self.server_address
         yield self.server_port
-        yield self.intent
+        yield self.next_state
 
 # Serialize without compression
-packet = HandshakePacket(773, "localhost", 25565, 2)
-serialized = packet.serialize()  # compression_threshold defaults to None (no compression)
-print(serialized)  # bytes ready for sending on a TCP socket
+packet = Intention(773, "mc.example.com", 25565, 2)
+data = packet.serialize()  # Returns bytes ready for transmission
+print(f"Packet size: {len(data)} bytes")
+
+# Serialize with compression threshold (e.g., 256 bytes)
+data_compressed = packet.serialize(compression_threshold=256)
+print(f"Compressed packet size: {len(data_compressed)} bytes")
 ```
+
+### 3. Using Complex Types
+
+Combine primitives into structured data:
+
+```python
+from src.codec.data_types.complex.prefixed_array import PrefixedArray
+from src.codec.data_types.primitives.byte import Byte
+
+# Create an array of bytes with VarInt length prefix
+public_key_bytes = PrefixedArray([71, 34, 122, 19, 8, ...])
+print(bytes(public_key_bytes))  # VarInt(length) + raw bytes
+```
+
+### 4. Available Packet Types
+
+Pre-implemented packets organized by protocol state:
+
+#### Handshaking (State 0)
+
+- `Intention` (serverbound, 0x00): Initiates connection
+- `LegacyServerListPing` (serverbound, 0xFE): Legacy ping support
+
+#### Status (State 1)
+
+- `StatusRequest` (serverbound, 0x00): Request server status
+- `PingRequest` (serverbound, 0x01): Send ping with payload
+- `StatusResponse` (clientbound, 0x00): Server status JSON
+- `PongResponse` (clientbound, 0x01): Ping response
+
+#### Login (State 2)
+
+- `Hello` (serverbound, 0x00): Send username and UUID
+- `Hello` (clientbound, 0x01): Server encryption/auth request
+- `LoginDisconnect` (clientbound, 0x00): Disconnect during login
+
+#### Play (State 3)
+
+- Coming soon...
 
 ### Compression example
 
@@ -116,77 +184,100 @@ serialized_compressed = packet.serialize(compression_threshold=256)
 
 ---
 
-## Example: status `PongResponse`
+## Packet Compression
 
-A serverbound or clientbound response class can accept raw bytes or typed values. Example shows constructing a simple `PongResponse` for the status state:
+The library automatically handles packet compression when a threshold is provided:
 
 ```python
-from codec.packets.packet import Packet
-from codec.data_types.primitives.long import Long
-from codec.data_types.primitives.varint import VarInt
+# No compression (development/testing)
+serialized = packet.serialize(compression_threshold=None)
 
-class PongResponse(Packet):
-    def __init__(self, timestamp: int):
-        super().__init__(packet_id=VarInt(0x01))
-        self.timestamp = Long(timestamp)
+# Enable compression with 256 byte threshold
+serialized = packet.serialize(compression_threshold=256)
+```
 
-    def _iter_fields(self):
-        yield self.timestamp
+**Compression behavior:**
 
-pong = PongResponse(1234567890123456789)
-data = pong.serialize()
+- `compression_threshold = None` → all packets uncompressed: `[VarInt: body_len][body]`
+- `compression_threshold >= 0`:
+  - Packets < threshold: `[VarInt: packet_len][VarInt: 0][body]`
+  - Packets >= threshold: `[VarInt: packet_len][VarInt: original_len][zlib_compressed_body]`
+
+---
+
+## Testing
+
+Run tests from the workspace root:
+
+```bash
+python -m pytest debug/test/
 ```
 
 ---
 
-## API summary
+## API Reference
 
-### Primitives
+### DataType Base Class
 
-All primitives follow the same contract:
+All primitives and complex types inherit from `DataType`:
 
-- Implement `__bytes__()` returning the protocol-compliant byte representation.
-- Validate input during construction and raise `ValueError` for invalid values.
-- Prefer `@dataclass(slots=True, frozen=True)`.
+```python
+from src.codec.data_types.data_type import DataType
 
-Common primitives and methods:
+class MyType(DataType):
+    def __bytes__(self) -> bytes:
+        """Serialize to bytes."""
+        pass
+    
+    @classmethod
+    def from_bytes(cls, data: bytes) -> "MyType":
+        """Deserialize from bytes."""
+        pass
+```
 
-- `VarInt(value: int)`
-  - `__bytes__()` — 1–5 bytes varint encoding
-  - `from_bytes(data, offset=0) -> (VarInt, bytes_consumed)`
+### Primitive Types
 
-- `VarLong(value: int)`
-  - `__bytes__()` — 1–10 bytes varlong encoding
+| Type | Size | Range / Notes | Example |
+| ------ | ------ | --------------- | --------- |
+| `Boolean` | 1 byte | `0x00` (False) or `0x01` (True) | `Boolean(True)` |
+| `Byte` | 1 byte | -128 to 127 | `Byte(-50)` |
+| `Int` | 4 bytes | -2³¹ to 2³¹-1 | `Int(12345)` |
+| `Long` | 8 bytes | -2⁶³ to 2⁶³-1 | `Long(9223372036854775807)` |
+| `UnsignedShort` | 2 bytes | 0 to 65535 | `UnsignedShort(25565)` |
+| `String` | Variable | UTF-8 + VarInt length (max 32767 chars) | `String("hello")` |
+| `UUID` | 16 bytes | 128-bit UUID | `UUID(uuid.uuid4())` |
+| `VarInt` | 1-5 bytes | Variable-length 32-bit int | `VarInt(300)` |
+| `VarLong` | 1-10 bytes | Variable-length 64-bit int | `VarLong(99999999999)` |
+| `Enum` | Depends on base | Restricted integer set | `Enum(2, VarInt)` |
 
-- `String(value: str)`
-  - `__bytes__()` — VarInt length + UTF-8 bytes
-  - `from_bytes(data, offset=0) -> (String, bytes_consumed)`
+### Complex Types
 
-- `UnsignedShort(value: int)`
-  - `__bytes__()` — 2 bytes big-endian
+| Type | Purpose |
+| ------ | --------- |
+| `Array[T]` | Fixed-length array of items |
+| `PrefixedArray[T]` | Array with VarInt length prefix |
+| `JSONTextComponent` | Minecraft chat component (JSON) |
 
-- `Long(value: int)`
-  - `__bytes__()` — 8 bytes big-endian signed
-  - `from_bytes(data) -> Long`
+### Packet Class
 
-- `UUID(value: uuid.UUID | str)`
-  - `__bytes__()` — 16 bytes big-endian
-  - `decode(buf, offset=0) -> (UUID, 16)`
+```python
+class Packet(ABC):
+    def __init__(self, packet_id: VarInt) -> None:
+        """Initialize with packet ID."""
+    
+    @abstractmethod
+    def _iter_fields(self) -> Iterable[bytes]:
+        """Yield field bytes in protocol order."""
+    
+    def serialize(self, compression_threshold: Optional[int] = None) -> bytes:
+        """Serialize packet with optional compression."""
+```
 
-- `Boolean(value: bool)`
-  - `__bytes__()` — single byte: `0x00` or `0x01`
+---
 
-- `Enum(value: int, base_type: Type)`
-  - Encapsulates an integer and encodes via `base_type` (commonly `VarInt`)
+## Example: status `PongResponse`
 
-### Packet
-
-`Packet` is an abstract base class. Contract:
-
-- `__init__(packet_id: VarInt)`
-- `_iter_fields()` must yield byte-serializable fields in the exact order required by the protocol.
-- `serialize(compression_threshold: Optional[int] = None) -> bytes` returns a fully framed packet (length prefix + optional compression wrapper + body).
-- `__str__()` returns a concise, human-friendly representation (packet name, id and public fields).
+A serverbound or clientbound response class can accept raw bytes or typed values. Example shows constructing a simple `PongResponse` for the status state:
 
 ---
 

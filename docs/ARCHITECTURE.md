@@ -7,46 +7,82 @@ This document outlines responsibilities, contracts, and expected behaviors of mo
 ## Project Structure
 
 ```text
-mcprotocol
-|   .gitignore
-|   LICENSE.md
-|   README.md
-|   
-+---docs
-|       ARCHITECTURE.md
-|       data_types.md
-|       
-\---src
-    |   main.py
-    |   
-    \---codec
-        |   __init__.py
-        |   
-        +---data_types
-        |   |   constants.py
-        |   |   
-        |   \---primitives
-        |           boolean.py
-        |           long.py
-        |           string.py
-        |           unsigned_short.py
-        |           uuid.py
-        |           varint.py
-        |           varlong.py
-        |           
-        \---packets
-            |   constants.py
-            |   packet.py
-            |   registry.py
-            |   __init__.py
-            |   
-            +---clientbound
-            |   \---status
-            |           pong_response.py
-            |           status_response.py
-            |           
-            \---serverbound
-
+mcprotocol/
+│
+├── README.md                                  # Main documentation
+├── LICENSE.md                                 # GPL v3 License
+│
+├── docs/
+│   ├── ARCHITECTURE.md                        # This file: design contracts
+│   ├── data_types.md                          # Type implementation status
+│   └── PACKETS.md                             # Packet definitions
+│
+├── src/
+│   ├── main.py                                # Entry point / examples
+│   │
+│   └── codec/
+│       ├── __init__.py
+│       │
+│       ├── data_types/
+│       │   ├── data_type.py                   # Base class for all types
+│       │   ├── constants.py                   # Type limits & constants
+│       │   │
+│       │   ├── primitives/
+│       │   │   ├── boolean.py                 # Boolean (1 byte)
+│       │   │   ├── byte.py                    # Signed 8-bit
+│       │   │   ├── int.py                     # Signed 32-bit
+│       │   │   ├── long.py                    # Signed 64-bit
+│       │   │   ├── unsigned_short.py          # Unsigned 16-bit
+│       │   │   ├── string.py                  # UTF-8 + VarInt length
+│       │   │   ├── uuid.py                    # 128-bit UUID
+│       │   │   ├── varint.py                  # Variable-length 32-bit
+│       │   │   ├── varlong.py                 # Variable-length 64-bit
+│       │   │   ├── enum.py                    # Restricted integer
+│       │   │   └── __init__.py
+│       │   │
+│       │   └── complex/
+│       │       ├── array.py                   # Fixed-length array
+│       │       ├── prefixed_array.py          # VarInt-prefixed array
+│       │       ├── json_text_component.py     # Minecraft chat component
+│       │       └── __init__.py
+│       │
+│       ├── packets/
+│       │   ├── packet.py                      # Base class: Packet
+│       │   ├── constants.py                   # Packet size limits
+│       │   ├── registry.py                    # Packet ID registry
+│       │   ├── packets_registry.json          # Packet metadata
+│       │   │
+│       │   ├── handshaking/
+│       │   │   └── serverbound/
+│       │   │       ├── intention.py           # 0x00: Handshake
+│       │   │       └── lslp.py                # 0xFE: Legacy ping
+│       │   │
+│       │   ├── status/
+│       │   │   ├── serverbound/
+│       │   │   │   ├── status_request.py      # 0x00: Request status
+│       │   │   │   └── ping_request.py        # 0x01: Send ping
+│       │   │   └── clientbound/
+│       │   │       ├── status_response.py     # 0x00: Status JSON
+│       │   │       └── pong_response.py       # 0x01: Pong
+│       │   │
+│       │   ├── login/
+│       │   │   ├── serverbound/
+│       │   │   │   └── hello.py               # 0x00: Username + UUID
+│       │   │   └── clientbound/
+│       │   │       ├── hello.py               # 0x01: Encryption request
+│       │   │       └── login_disconnect.py    # 0x00: Disconnect
+│       │   │
+│       │   └── play/                          # Coming soon
+│       │       ├── serverbound/
+│       │       └── clientbound/
+│       │
+│       └── network/
+│           └── packet_io.py                   # Socket I/O, decompression
+│
+└── debug/
+    ├── clear_workspace.bat                    # Cleanup script
+    └── test/
+        └── test_login_disconnect_server.py    # Example tests
 ```
 
 ---
@@ -64,34 +100,53 @@ This document defines formal contracts between components of the Minecraft codec
 
 ## Module Responsibilities
 
+### `data_types` (Base class)
+
+**`DataType` abstract base class:**
+
+* Defines the contract for all primitive and complex types.
+* Requires every data type to implement:
+  * `__bytes__()` for protocol-compliant serialization.
+  * `from_bytes(data: bytes)` for deserialization.
+* Ensures immutability and consistent behavior across the type hierarchy.
+* Uses `__slots__` for memory efficiency.
+
+---
+
 ### `data_types.primitives`
 
 **Primary responsibilities:**
 
-* Provide immutable, memory-efficient implementations of all protocol primitive types.
+* Provide immutable, memory-efficient implementations of all protocol primitive types (extends `DataType`).
 * Implement `__bytes__()` for protocol-compliant serialization.
-* Provide deserialization methods where applicable (`from_bytes` or `decode()`), with integrity checks.
+* Provide deserialization via `from_bytes()` class method, with integrity checks.
 * Validate values at construction to prevent invalid data.
 
 **Contract for each primitive:**
 
-* Use `@dataclass(slots=True, frozen=True)` unless justified otherwise.
+* Extends `DataType` and uses `@dataclass(slots=True, frozen=True)` or `__slots__` pattern.
 * `__bytes__()` must return bytes ready to concatenate into a packet body.
-* If `from_bytes`/`decode(buf, offset)` exists:
-
-  * Return `(instance, bytes_consumed)`
+* `from_bytes(data: bytes)` must:
+  * Return instance of the type
   * Raise `ValueError` if data is incomplete or malformed.
 
 **Implemented primitives:**
 
-* `Boolean` — 1 byte (`0x00` = False, `0x01` = True)
-* `Enum` — integer restricted to a predefined set; encoded via a base type (VarInt, UnsignedShort)
-* `Long` — signed 64-bit integer, big-endian
-* `UnsignedShort` — 16-bit unsigned integer, big-endian
-* `String` — UTF-8 string prefixed by VarInt length; max 32767 UTF-16 code units
-* `UUID` — 128-bit value (16 bytes), big-endian (MSB + LSB)
-* `VarInt` — variable-length 32-bit integer (1–5 bytes)
-* `VarLong` — variable-length 64-bit integer (1–10 bytes)
+* `Boolean` — 1 byte (`0x00` = False, `0x01` = True) ✓ Implemented
+* `Byte` — signed 8-bit integer (-128 to 127) ✓ Implemented
+* `Enum` — integer restricted to a predefined set; encoded via a base type (VarInt, UnsignedShort) ✓ Implemented
+* `Int` — signed 32-bit integer (-2³¹ to 2³¹-1) ✓ Implemented
+* `Long` — signed 64-bit integer (-2⁶³ to 2⁶³-1) ✓ Implemented
+* `UnsignedShort` — 16-bit unsigned integer (0 to 65535) ✓ Implemented
+* `String` — UTF-8 string prefixed by VarInt length; max 32767 UTF-16 code units ✓ Implemented
+* `UUID` — 128-bit value (16 bytes), big-endian (MSB + LSB) ✓ Implemented
+* `VarInt` — variable-length 32-bit integer (1–5 bytes) ✓ Implemented
+* `VarLong` — variable-length 64-bit integer (1–10 bytes) ✓ Implemented
+
+**Pending primitives:**
+
+* `Float`, `Double` — IEEE 754 floating point numbers
+* `Angle`, `Position` — Specialized types for rotations and coordinates
 
 ---
 
@@ -99,12 +154,20 @@ This document defines formal contracts between components of the Minecraft codec
 
 **Primary responsibilities:**
 
-* Compose primitives and other complex types into higher-level structures (e.g., `Position`, `EntityMetadata`).
-* Expose `__bytes__()` and optionally `from_bytes()`/`decode()` for incremental parsing.
+* Compose primitives and other complex types into higher-level structures (e.g., `Array`, `PrefixedArray`, `JSONTextComponent`).
+* Extend `DataType` and implement `__bytes__()` for serialization.
+* Provide `from_bytes()` for incremental parsing.
 * Validate collective constraints (e.g., coordinate ranges, array lengths).
+
+**Implemented complex types:**
+
+* `Array[T]` — Fixed-length array of homogeneous items ✓ Implemented
+* `PrefixedArray[T]` — Array with VarInt length prefix (supports all types) ✓ Implemented
+* `JSONTextComponent` — Minecraft chat component format ✓ Implemented
 
 **Contract:**
 
+* Must inherit from `DataType` and implement both abstract methods.
 * No I/O or network logic.
 * Reusable by multiple packets without circular dependencies.
 

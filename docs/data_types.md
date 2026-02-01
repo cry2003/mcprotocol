@@ -1,65 +1,27 @@
 <!-- markdownlint-disable MD033 -->
 
-# Minecraft Protocol Types - Implementation Status
+# Minecraft Protocol Data Types - Implementation Reference
 
-Reference: Java Edition Protocol  
-Source: [Minecraft Wiki – Java Edition Protocol / Data Types](https://minecraft.wiki/w/Java_Edition_protocol/Packets#Data_types)
+This document provides a comprehensive reference for all data types implemented in the mcprotocol library, including primitives, complex types, and their serialization contracts.
+
+**Reference:** [Minecraft Wiki – Java Edition Protocol / Data Types](https://minecraft.wiki/w/Java_Edition_protocol/Packets#Data_types)
 
 ---
 
-## Primitive Type Standards
+## Type Hierarchy
 
-All implemented primitive types follow these rules:
+All data types in this library inherit from `DataType`, which defines two abstract methods:
 
-1. **Serialization**
-   - Each type implements `__bytes__()` returning protocol-compliant bytes.
-   - Deserialization is supported via class methods (`from_bytes()` or `decode()`).
+- `__bytes__() -> bytes`: Serialize to protocol-compliant bytes
+- `from_bytes(data: bytes) -> T`: Deserialize from bytes
 
-2. **Validation**
-   - Values are validated to fit protocol ranges.
-   - Out-of-range or invalid values raise exceptions (`ValueError`).
+### Design Principles
 
-3. **Memory Optimization**
-   - Types use `@dataclass(slots=True, frozen=True)` for immutability and memory efficiency.
-
-4. **Boolean**
-   - Single byte:
-     - `False` → 0x00
-     - `True` → 0x01
-
-5. **Enum**
-   - Integer restricted to a predefined set.
-   - Serialized via a chosen base type (e.g., VarInt, UnsignedShort).
-
-6. **Long**
-   - Signed 64-bit integer, big-endian.
-   - Range: -2^63 to 2^63 - 1.
-   - Constructible from 8-byte buffers.
-
-7. **UnsignedShort**
-   - 16-bit unsigned integer, big-endian.
-   - Range: 0–65535.
-
-8. **String**
-   - UTF-8 string prefixed with VarInt length.
-   - Maximum 32767 UTF-16 code units; max 32767\*3 UTF-8 bytes.
-   - Length prefix must fit in 3 bytes.
-
-9. **UUID**
-   - 128-bit (16 bytes) big-endian.
-   - MSB: first 8 bytes, LSB: last 8 bytes.
-   - Decodable via `decode()`.
-
-10. **VarInt**
-    - Variable-length 32-bit signed integer (1–5 bytes).
-    - Each byte: lower 7 bits = value, MSB = continuation flag.
-    - Range: 0 to 2^32-1.
-    - Decodable via `from_bytes()`.
-
-11. **VarLong**
-    - Variable-length 64-bit signed integer (1–10 bytes).
-    - Each byte: lower 7 bits = value, MSB = continuation flag.
-    - Range: 0 to 2^64-1.
+1. **Fail-fast validation**: All values validated at construction time. Invalid input raises `ValueError` or `TypeError`.
+2. **Immutability**: Types use `@dataclass(slots=True, frozen=True)` or `__slots__` to prevent accidental mutation.
+3. **Protocol compliance**: All encoding/decoding strictly follows the Minecraft Java protocol specification.
+4. **Memory efficiency**: `__slots__` reduces memory footprint for types instantiated frequently in packet parsing.
+5. **Explicit error messages**: Errors include expected ranges and actual values.
 
 ---
 
@@ -79,7 +41,7 @@ All implemented primitive types follow these rules:
       <td>Boolean</td>
       <td>1</td>
       <td>Either false or true (0x00 = false, 0x01 = true)</td>
-      <td>Pending</td>
+      <td>Implemented</td>
     </tr>
     <tr>
       <td>Byte</td>
@@ -109,7 +71,7 @@ All implemented primitive types follow these rules:
       <td>Int</td>
       <td>4</td>
       <td>Signed 32-bit integer (-2³¹ to 2³¹-1)</td>
-      <td>Pending</td>
+      <td>Implemented</td>
     </tr>
     <tr>
       <td>Long</td>
