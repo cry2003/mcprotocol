@@ -12,7 +12,7 @@ def main() -> None:
     This script connects to a Hypixel server on mc.hypixel.net:25565,
     sends a handshake and status request, and prints the server response.
     """
-    host = "mc.hypixel.net"
+    host = "localhost"
     port = 25565
     protocol_version = 774
 
@@ -44,6 +44,8 @@ def main() -> None:
             # Read Login Finished packet
             login_finished = packet_io.read()
             print("Login Success:", login_finished)
+            
+            packet_io.send(packet_id="0x03")
             
 
     except ConnectionRefusedError:
