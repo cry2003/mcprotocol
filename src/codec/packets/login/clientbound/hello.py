@@ -9,7 +9,7 @@ from codec.data_types.complex.prefixed_array import PrefixedArray
 
 
 class Hello(Packet):
-    """Login Hello packet (clientbound, Encryption Request).
+    """Login Hello packet.
 
     Packet ID:
         0x01
