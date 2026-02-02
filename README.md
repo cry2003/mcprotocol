@@ -14,7 +14,7 @@ A compact, type-safe Python library that implements a **Minecraft protocol codec
 
 - **Comprehensive type system**:
   - Primitives: `Boolean`, `Byte`, `Int`, `Long`, `UnsignedShort`, `String`, `UUID`, `VarInt`, `VarLong`, `Enum`, and more.
-  - Complex types: `Array`, `PrefixedArray`, `JSONTextComponent` with automatic serialization.
+  - Complex types: `Array`, `PrefixedArray`, `PrefixedOptional`, `Identifier`, `JsonTextComponent`, `GameProfile`.
   - Base class `DataType` ensures consistent behavior across all types.
 
 - **Protocol-compliant packet handling**:
@@ -30,7 +30,7 @@ A compact, type-safe Python library that implements a **Minecraft protocol codec
 - **Extensible packet architecture**:
   - Define new packets by subclassing `Packet` and implementing `_iter_fields()`.
   - Support for both serverbound (client→server) and clientbound (server→client) packets.
-  - Organized by protocol state: Handshaking, Status, Login, Play.
+  - Organized by protocol state: Handshaking, Status, Login, Configuration, Play.
 
 - **Pure Python, dependency-free**:
   - No external runtime dependencies required.
@@ -71,9 +71,9 @@ python -m src.main
 All primitives inherit from `DataType` and provide `__bytes__()` for serialization and `from_bytes()` for deserialization:
 
 ```python
-from src.codec.data_types.primitives.varint import VarInt
-from src.codec.data_types.primitives.string import String
-from src.codec.data_types.primitives.unsigned_short import UnsignedShort
+from codec.data_types.primitives.varint import VarInt
+from codec.data_types.primitives.string import String
+from codec.data_types.primitives.unsigned_short import UnsignedShort
 
 # Create and serialize primitives
 version = VarInt(773)
@@ -94,11 +94,11 @@ print(version_decoded.value)  # 773
 Define packets by subclassing `Packet` and implementing `_iter_fields()`:
 
 ```python
-from src.codec.packets.packet import Packet
-from src.codec.data_types.primitives.varint import VarInt
-from src.codec.data_types.primitives.string import String
-from src.codec.data_types.primitives.unsigned_short import UnsignedShort
-from src.codec.data_types.primitives.enum import Enum
+from codec.packets.packet import Packet
+from codec.data_types.primitives.varint import VarInt
+from codec.data_types.primitives.string import String
+from codec.data_types.primitives.unsigned_short import UnsignedShort
+from codec.data_types.primitives.enum import Enum
 
 class Intention(Packet):
     """Handshake packet (serverbound, packet state: Handshaking)."""
@@ -133,11 +133,11 @@ print(f"Compressed packet size: {len(data_compressed)} bytes")
 Combine primitives into structured data:
 
 ```python
-from src.codec.data_types.complex.prefixed_array import PrefixedArray
-from src.codec.data_types.primitives.byte import Byte
+from codec.data_types.complex.prefixed_array import PrefixedArray
+from codec.data_types.primitives.byte import Byte
 
 # Create an array of bytes with VarInt length prefix
-public_key_bytes = PrefixedArray([71, 34, 122, 19, 8, ...])
+public_key_bytes = PrefixedArray([Byte(71), Byte(34), Byte(122), Byte(19), Byte(8)])
 print(bytes(public_key_bytes))  # VarInt(length) + raw bytes
 ```
 
@@ -160,8 +160,20 @@ Pre-implemented packets organized by protocol state:
 #### Login (State 2)
 
 - `Hello` (serverbound, 0x00): Send username and UUID
-- `Hello` (clientbound, 0x01): Server encryption/auth request
+- `Encryption Response` (serverbound, 0x01): Shared secret + verify token
+- `Custom Query Answer` (serverbound, 0x02): Plugin response
+- `Login Acknowledged` (serverbound, 0x03): Login complete signal
+- `Cookie Response` (serverbound, 0x04): Cookie payload
 - `LoginDisconnect` (clientbound, 0x00): Disconnect during login
+- `Hello` (clientbound, 0x01): Server encryption/auth request
+- `Login Finished` (clientbound, 0x02): GameProfile payload
+- `Set Compression` (clientbound, 0x03): Compression threshold
+- `Custom Query` (clientbound, 0x04): Plugin request
+- `Cookie Request` (clientbound, 0x05): Cookie request
+
+#### Configuration (State 4)
+
+- `Cookie Request` (clientbound, 0x00): Cookie request
 
 #### Play (State 3)
 
@@ -169,7 +181,7 @@ Pre-implemented packets organized by protocol state:
 
 ### Compression example
 
-`Packet.serialize(compression_threshold: Optional[int])` accepts either `None` (no compression) or a non-negative integer threshold.
+`Packet.serialize(compression_threshold: Optional[int])` accepts either `None` (no compression) or a non-negative integer threshold. Negative values are treated as compression disabled.
 
 - `None` → uncompressed frame: `[VarInt: body_len][body]`
 - `threshold >= 0`:
@@ -199,6 +211,7 @@ serialized = packet.serialize(compression_threshold=256)
 **Compression behavior:**
 
 - `compression_threshold = None` → all packets uncompressed: `[VarInt: body_len][body]`
+- `compression_threshold < 0` → treated as disabled (same as `None`)
 - `compression_threshold >= 0`:
   - Packets < threshold: `[VarInt: packet_len][VarInt: 0][body]`
   - Packets >= threshold: `[VarInt: packet_len][VarInt: original_len][zlib_compressed_body]`
@@ -207,11 +220,7 @@ serialized = packet.serialize(compression_threshold=256)
 
 ## Testing
 
-Run tests from the workspace root:
-
-```bash
-python -m pytest debug/test/
-```
+No automated tests are currently tracked in this repository.
 
 ---
 
@@ -222,7 +231,7 @@ python -m pytest debug/test/
 All primitives and complex types inherit from `DataType`:
 
 ```python
-from src.codec.data_types.data_type import DataType
+from codec.data_types.data_type import DataType
 
 class MyType(DataType):
     def __bytes__(self) -> bytes:
@@ -256,7 +265,10 @@ class MyType(DataType):
 | ------ | --------- |
 | `Array[T]` | Fixed-length array of items |
 | `PrefixedArray[T]` | Array with VarInt length prefix |
-| `JSONTextComponent` | Minecraft chat component (JSON) |
+| `PrefixedOptional[T]` | Boolean-prefixed optional value |
+| `Identifier` | Namespaced identifier (`namespace:path`) |
+| `JsonTextComponent` | Minecraft chat component (JSON) |
+| `GameProfile` | UUID + name + properties |
 
 ### Packet Class
 
@@ -277,7 +289,19 @@ class Packet(ABC):
 
 ## Example: status `PongResponse`
 
-A serverbound or clientbound response class can accept raw bytes or typed values. Example shows constructing a simple `PongResponse` for the status state:
+A clientbound response class can accept raw bytes or typed values:
+
+```python
+from codec.packets.status.clientbound.pong_response import PongResponse
+
+# From raw bytes:
+packet = PongResponse(b"\x00\x00\x00\x00\x00\x00\x00\x2a")
+print(packet.timestamp)
+
+# Or from an int directly:
+packet = PongResponse(42)
+print(bytes(packet))
+```
 
 ---
 

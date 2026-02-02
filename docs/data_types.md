@@ -155,14 +155,14 @@ All data types in this library inherit from `DataType`, which defines two abstra
       <td>Pending</td>
     </tr>
     <tr>
-      <td>JSON Text Component</td>
+      <td>Json Text Component</td>
       <td>≥1 ≤ (262144×3)+3</td>
       <td>Implemented</td>
     </tr>
     <tr>
       <td>Identifier</td>
       <td>≥1 ≤ (32767×3)+3</td>
-      <td>Pending</td>
+      <td>Implemented</td>
     </tr>
     <tr>
       <td>Entity Metadata</td>
@@ -202,7 +202,7 @@ All data types in this library inherit from `DataType`, which defines two abstra
     <tr>
       <td>Prefixed Optional X</td>
       <td>size of Boolean + (is present ? size of X : 0)</td>
-      <td>Pending</td>
+      <td>Implemented</td>
     </tr>
     <tr>
       <td>Array of X</td>

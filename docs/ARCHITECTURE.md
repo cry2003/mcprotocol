@@ -15,7 +15,7 @@ mcprotocol/
 ├── docs/
 │   ├── ARCHITECTURE.md                        # This file: design contracts
 │   ├── data_types.md                          # Type implementation status
-│   └── PACKETS.md                             # Packet definitions
+│   └── packets.md                             # Packet definitions
 │
 ├── src/
 │   ├── main.py                                # Entry point / examples
@@ -30,6 +30,7 @@ mcprotocol/
 │       │   ├── primitives/
 │       │   │   ├── boolean.py                 # Boolean (1 byte)
 │       │   │   ├── byte.py                    # Signed 8-bit
+│       │   │   ├── enum.py                    # Restricted integer
 │       │   │   ├── int.py                     # Signed 32-bit
 │       │   │   ├── long.py                    # Signed 64-bit
 │       │   │   ├── unsigned_short.py          # Unsigned 16-bit
@@ -37,12 +38,14 @@ mcprotocol/
 │       │   │   ├── uuid.py                    # 128-bit UUID
 │       │   │   ├── varint.py                  # Variable-length 32-bit
 │       │   │   ├── varlong.py                 # Variable-length 64-bit
-│       │   │   ├── enum.py                    # Restricted integer
 │       │   │   └── __init__.py
 │       │   │
 │       │   └── complex/
 │       │       ├── array.py                   # Fixed-length array
+│       │       ├── game_profile.py            # UUID + name + properties
+│       │       ├── identifier.py              # Namespaced identifiers
 │       │       ├── prefixed_array.py          # VarInt-prefixed array
+│       │       ├── prefixed_optional.py       # Boolean-prefixed optional
 │       │       ├── json_text_component.py     # Minecraft chat component
 │       │       └── __init__.py
 │       │
@@ -67,22 +70,28 @@ mcprotocol/
 │       │   │
 │       │   ├── login/
 │       │   │   ├── serverbound/
-│       │   │   │   └── hello.py               # 0x00: Username + UUID
+│       │   │   │   ├── hello.py               # 0x00: Username + UUID
+│       │   │   │   ├── key.py                 # 0x01: Encryption response
+│       │   │   │   ├── custom_query_answer.py # 0x02: Plugin response
+│       │   │   │   ├── login_acknowledged.py  # 0x03: Login ACK
+│       │   │   │   └── cookie_response.py     # 0x04: Cookie response
 │       │   │   └── clientbound/
+│       │   │       ├── login_disconnect.py    # 0x00: Disconnect
 │       │   │       ├── hello.py               # 0x01: Encryption request
-│       │   │       └── login_disconnect.py    # 0x00: Disconnect
+│       │   │       ├── login_finished.py      # 0x02: Login finished
+│       │   │       ├── login_compression.py   # 0x03: Set compression
+│       │   │       ├── custom_query.py        # 0x04: Plugin request
+│       │   │       └── cookie_request.py      # 0x05: Cookie request
 │       │   │
-│       │   └── play/                          # Coming soon
-│       │       ├── serverbound/
+│       │   └── configuration/
 │       │       └── clientbound/
-│       │
-│       └── network/
-│           └── packet_io.py                   # Socket I/O, decompression
+│       │           └── cookie_request.py      # 0x00: Cookie request
+│
+│   └── network/
+│       └── packet_io.py                       # Socket I/O, decompression
 │
 └── debug/
     ├── clear_workspace.bat                    # Cleanup script
-    └── test/
-        └── test_login_disconnect_server.py    # Example tests
 ```
 
 ---
@@ -154,7 +163,7 @@ This document defines formal contracts between components of the Minecraft codec
 
 **Primary responsibilities:**
 
-* Compose primitives and other complex types into higher-level structures (e.g., `Array`, `PrefixedArray`, `JSONTextComponent`).
+* Compose primitives and other complex types into higher-level structures (e.g., `Array`, `PrefixedArray`, `JsonTextComponent`).
 * Extend `DataType` and implement `__bytes__()` for serialization.
 * Provide `from_bytes()` for incremental parsing.
 * Validate collective constraints (e.g., coordinate ranges, array lengths).
@@ -162,8 +171,11 @@ This document defines formal contracts between components of the Minecraft codec
 **Implemented complex types:**
 
 * `Array[T]` — Fixed-length array of homogeneous items ✓ Implemented
+* `Identifier` — Namespaced identifier (`namespace:path`) ✓ Implemented
+* `PrefixedOptional[T]` — Boolean-prefixed optional value ✓ Implemented
 * `PrefixedArray[T]` — Array with VarInt length prefix (supports all types) ✓ Implemented
-* `JSONTextComponent` — Minecraft chat component format ✓ Implemented
+* `JsonTextComponent` — Minecraft chat component format ✓ Implemented
+* `GameProfile` — UUID + name + properties ✓ Implemented
 
 **Contract:**
 
@@ -192,7 +204,7 @@ This document defines formal contracts between components of the Minecraft codec
 * `serialize(compression_threshold: Optional[int]) -> bytes`:
 
   * Builds `body = packet_id + concatenated fields`.
-  * If `compression_threshold is None` → uncompressed with `VarInt(body_len)` as length prefix.
+  * If `compression_threshold is None` (or < 0) → uncompressed with `VarInt(body_len)` as length prefix.
   * If `compression_threshold >= 0`:
 
     * If `body_len < threshold`: `Data Length = VarInt(0)`, `Packet Length = VarInt(len(data_length) + body_len)`, return `packet_length + data_length + body`.
@@ -206,7 +218,7 @@ This document defines formal contracts between components of the Minecraft codec
 ### `constants.py`
 
 * `data_types/constants.py`: primitive type constants (limits, defaults, segment bits, max values)
-* `packets/constants.py`: packet limits and serialization parameters (max packet length, compression thresholds)
+* `packets/constants.py`: packet limits and serialization parameters (max VarInt-3 length, max packet length, identifier regexes)
 * Private constants use a leading `_` and must be documented.
 
 ---
@@ -254,8 +266,8 @@ This document defines formal contracts between components of the Minecraft codec
    * `body.extend(bytes(field))` for each field in `_iter_fields()`
 2. Compute `body_len = len(body)`
 
-   * If `body_len > _MAX_UNCOMPRESSED_SERVERBOUND` → raise `ValueError`
-3. If `compression_threshold is None`:
+   * If `body_len > _MAX_VARINT_3_BYTES` → raise `ValueError`
+3. If `compression_threshold is None` or `< 0`:
 
    * `length_prefix = bytes(VarInt(body_len))`
    * Validate `len(length_prefix) ≤ 3`
@@ -276,5 +288,5 @@ This document defines formal contracts between components of the Minecraft codec
      * Validate `len(packet_length) ≤ 3`
      * Return `packet_length + data_length + compressed`
 
-* `compression_threshold` must be `None` or `>= 0`; otherwise raise `ValueError`
+* `compression_threshold` values `< 0` are treated as disabled compression
 * `data_length` indicates uncompressed size to the receiver
