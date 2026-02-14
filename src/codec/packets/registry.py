@@ -1,4 +1,4 @@
-# src\codec\packets\registry.py
+# src/codec/packets/registry.py
 
 import os
 import json

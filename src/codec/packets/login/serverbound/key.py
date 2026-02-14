@@ -6,7 +6,7 @@ from codec.data_types.primitives.byte import Byte
 from codec.data_types.complex.prefixed_array import PrefixedArray
 
 
-class key(Packet):
+class Key(Packet):
     """Login Encryption Request packet.
 
     Packet ID:

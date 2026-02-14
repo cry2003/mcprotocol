@@ -1,4 +1,4 @@
-# src/codec/data_types/primitives/prefixed_optional.py
+# src/codec/data_types/complex/prefixed_optional.py
 
 from dataclasses import dataclass
 from typing import Generic, Optional, TypeVar

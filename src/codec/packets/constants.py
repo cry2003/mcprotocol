@@ -1,4 +1,4 @@
-# src/codec/constants.py
+# src/codec/packets/constants.py
 
 import re
 

@@ -1,4 +1,4 @@
-# src\codec\packets\status\clientbound\status_response.py
+# src/codec/packets/status/clientbound/status_response.py
 
 import json
 from typing import List, Optional

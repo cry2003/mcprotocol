@@ -1,4 +1,4 @@
-# src/codec/data_types/data_types_constants.py
+# src/codec/data_types/constants.py
 
 from typing import TYPE_CHECKING
 
@@ -75,3 +75,47 @@ _HOVER_EVENTS = {
         "uuid": "Array",  # array of 4 ints or String UUID
     },
 }
+
+# Constants for NBT tags and utility maps.
+_TAG_END = 0
+_TAG_BYTE = 1
+_TAG_SHORT = 2
+_TAG_INT = 3
+_TAG_LONG = 4
+_TAG_FLOAT = 5
+_TAG_DOUBLE = 6
+_TAG_BYTE_ARRAY = 7
+_TAG_STRING = 8
+_TAG_LIST = 9
+_TAG_COMPOUND = 10
+_TAG_INT_ARRAY = 11
+_TAG_LONG_ARRAY = 12
+
+# Map id -> human name (optional convenience)
+_TAG_NAMES = {
+    _TAG_END: "TAG_End",
+    _TAG_BYTE: "TAG_Byte",
+    _TAG_SHORT: "TAG_Short",
+    _TAG_INT: "TAG_Int",
+    _TAG_LONG: "TAG_Long",
+    _TAG_FLOAT: "TAG_Float",
+    _TAG_DOUBLE: "TAG_Double",
+    _TAG_BYTE_ARRAY: "TAG_Byte_Array",
+    _TAG_STRING: "TAG_String",
+    _TAG_LIST: "TAG_List",
+    _TAG_COMPOUND: "TAG_Compound",
+    _TAG_INT_ARRAY: "TAG_Int_Array",
+    _TAG_LONG_ARRAY: "TAG_Long_Array",
+}
+
+# NBT sizes (bytes), per specification
+_NBT_NAME_LEN_BYTES = 2  # unsigned short
+_NBT_STRING_LEN_BYTES = 2  # unsigned short
+_NBT_LIST_LEN_BYTES = 4  # signed int
+_NBT_ARRAY_LEN_BYTES = 4  # signed int
+_NBT_BYTE_BYTES = 1
+_NBT_SHORT_BYTES = 2
+_NBT_INT_BYTES = 4
+_NBT_LONG_BYTES = 8
+_NBT_FLOAT_BYTES = 4
+_NBT_DOUBLE_BYTES = 8

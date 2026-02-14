@@ -1,3 +1,5 @@
+# src/codec/packets/handshaking/serverbound/lslp.py
+
 from codec.packets.packet import Packet
 from codec.data_types.primitives.varint import VarInt
 from codec.data_types.primitives.unsigned_short import UnsignedShort

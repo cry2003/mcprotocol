@@ -1,4 +1,4 @@
-# src\codec\data_types\data_type.py
+# src/codec/data_types/data_type.py
 
 from __future__ import annotations
 

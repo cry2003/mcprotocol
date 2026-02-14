@@ -1,4 +1,4 @@
-# src/codec/packet/packet.py
+# src/codec/packets/packet.py
 
 from abc import ABC, abstractmethod
 from typing import Iterable, Optional

@@ -1,4 +1,4 @@
-# src\codec\packets\status\serverbound\status_request.py
+# src/codec/packets/status/serverbound/status_request.py
 
 from codec.packets.packet import Packet
 from codec.data_types.primitives.varint import VarInt

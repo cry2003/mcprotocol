@@ -1,4 +1,4 @@
-# src/codec/packets/configuration/client/cookie_request.py
+# src/codec/packets/configuration/clientbound/cookie_request.py
 
 from codec.packets.packet import Packet
 from codec.data_types.complex.identifier import Identifier
