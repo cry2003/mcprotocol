@@ -1,6 +1,5 @@
 # src/codec/data_types/complex/identifier.py
 
-import re
 from ..primitives.string import String
 from codec.packets.constants import _NAMESPACE_RE, _VALUE_RE
 
