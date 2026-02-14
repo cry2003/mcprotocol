@@ -39,6 +39,8 @@ class Hello(Packet):
         # Parse server_id using existing String.from_bytes
         self.server_id, consumed = String.from_bytes(data[offset:])
         offset += consumed
+        if len(self.server_id.value) > 20:
+            raise ValueError("server_id exceeds maximum length of 20 characters")
 
         # Parse public_key
         self.public_key, consumed = PrefixedArray.from_bytes(
@@ -55,6 +57,8 @@ class Hello(Packet):
         # Parse should_authenticate
         self.should_authenticate, consumed = Boolean.from_bytes(data[offset:])
         offset += consumed
+        if offset != len(data):
+            raise ValueError("Unexpected trailing bytes in Login Hello packet payload")
 
     def _iter_fields(self):
         yield self.server_id

@@ -119,3 +119,7 @@ _NBT_INT_BYTES = 4
 _NBT_LONG_BYTES = 8
 _NBT_FLOAT_BYTES = 4
 _NBT_DOUBLE_BYTES = 8
+
+# NBT practical bounds used by parser validation
+_MAX_NBT_STRING = 0xFFFF  # unsigned short byte length
+_MAX_NBT_ARRAY = _INT32_MAX

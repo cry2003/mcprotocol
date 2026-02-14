@@ -32,11 +32,10 @@ class PongResponse(Packet):
         super().__init__(VarInt(0x01))
 
         if isinstance(data, bytes):
-            long_value, _ = Long.from_bytes(data)
-            self.timestamp = long_value.value
+            self.timestamp, _ = Long.from_bytes(data)
         else:
-            self.timestamp = int(data)
+            self.timestamp = Long(int(data))
 
     def _iter_fields(self):
         """Yield the timestamp as a Long field for serialization."""
-        yield Long(self.timestamp)
+        yield self.timestamp

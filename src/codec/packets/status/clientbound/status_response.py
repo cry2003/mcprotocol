@@ -23,7 +23,7 @@ class StatusResponse(Packet):
     """
 
     __slots__ = (
-        "_json_string",  # Raw JSON string for serialization
+        "json_response",
         "version_name",
         "version_protocol",
         "max_players",
@@ -43,12 +43,11 @@ class StatusResponse(Packet):
         """
         super().__init__(VarInt(0x00))
 
-        # Deserialize the JSON string
-        string_field, _ = String.from_bytes(data)
-        self._json_string = string_field.value
+        # Deserialize the JSON string as protocol DataType.
+        self.json_response, _ = String.from_bytes(data)
 
         # Parse JSON safely
-        obj = json.loads(self._json_string)
+        obj = json.loads(self.json_response.value)
 
         # Version info
         version = obj.get("version", {})
@@ -77,4 +76,4 @@ class StatusResponse(Packet):
 
     def _iter_fields(self):
         """Yield the JSON string as a single String field for serialization."""
-        yield String(self._json_string)
+        yield self.json_response

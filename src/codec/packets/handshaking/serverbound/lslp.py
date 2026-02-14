@@ -18,9 +18,9 @@ class LegacyServerListPing(Packet):
         Serverbound
 
     Fields:
-        hostname (str): Hostname or IP of the server.
-        port (int): Port of the server (default 25565).
-        protocol_version (int): Minecraft protocol version (default 74).
+        hostname (String): Hostname or IP of the server.
+        port (UnsignedShort): Port of the server (default 25565).
+        protocol_version (int): Minecraft protocol version byte (default 74).
     """
 
     __slots__ = (
@@ -39,15 +39,13 @@ class LegacyServerListPing(Packet):
 
         if not hostname:
             raise ValueError("Hostname cannot be empty")
-        if not (0 < port <= 65535):
-            raise ValueError(f"Port must be in range 1-65535, got {port}")
-        if protocol_version < 0:
+        if not (0 <= protocol_version <= 255):
             raise ValueError(
-                f"Protocol version must be non-negative, got {protocol_version}"
+                f"Protocol version must be in range 0-255, got {protocol_version}"
             )
 
-        self.hostname = hostname
-        self.port = port
+        self.hostname = String(hostname)
+        self.port = UnsignedShort(port)
         self.protocol_version = protocol_version
 
     def _iter_fields(self):
@@ -70,7 +68,7 @@ class LegacyServerListPing(Packet):
         yield String("MC|PingHost").value.encode("utf-16-be")
 
         # Hostname encoded in UTF-16BE
-        hostname_bytes = self.hostname.encode("utf-16-be")
+        hostname_bytes = self.hostname.value.encode("utf-16-be")
 
         # Length of remaining data
         yield bytes(UnsignedShort(7 + len(hostname_bytes)))
@@ -79,13 +77,13 @@ class LegacyServerListPing(Packet):
         yield self.protocol_version.to_bytes(1, "big")
 
         # Hostname length in UTF-16 code units
-        yield bytes(UnsignedShort(len(self.hostname)))
+        yield bytes(UnsignedShort(len(self.hostname.value)))
 
         # Hostname bytes
         yield hostname_bytes
 
         # Port (4 bytes, big-endian)
-        yield self.port.to_bytes(4, "big")
+        yield self.port.value.to_bytes(4, "big")
 
     def __bytes__(self) -> bytes:
         """
