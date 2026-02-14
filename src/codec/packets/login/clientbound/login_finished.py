@@ -31,7 +31,11 @@ class LoginFinished(Packet):
         super().__init__(packet_id=VarInt(0x02))
 
         # Deserialize the GameProfile from bytes
-        self.profile, _ = GameProfile.from_bytes(data)
+        self.profile, consumed = GameProfile.from_bytes(data)
+        if consumed != len(data):
+            raise ValueError(
+                f"LoginFinished has unexpected trailing bytes: {len(data) - consumed}"
+            )
 
     def _iter_fields(self):
         """Yield serialized fields in protocol order."""

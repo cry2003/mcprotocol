@@ -32,6 +32,15 @@ class Property(DataType):
             raise TypeError("Property value must be a String")
         if not isinstance(self.signature, PrefixedOptional):
             raise TypeError("Property signature must be a PrefixedOptional[String]")
+        if len(self.name.value) > 64:
+            raise ValueError("Property name cannot exceed 64 characters")
+        if len(self.value.value) > 32767:
+            raise ValueError("Property value cannot exceed 32767 characters")
+        if (
+            self.signature.value is not None
+            and len(self.signature.value.value) > 1024
+        ):
+            raise ValueError("Property signature cannot exceed 1024 characters")
 
     def __bytes__(self) -> bytes:
         return bytes(self.name) + bytes(self.value) + bytes(self.signature)
@@ -43,13 +52,10 @@ class Property(DataType):
         value, value_consumed = String.from_bytes(data[offset:])
         offset += value_consumed
 
-        if offset < len(data):
-            signature, signature_consumed = PrefixedOptional.from_bytes(
-                data[offset:], String
-            )
-            offset += signature_consumed
-        else:
-            signature = PrefixedOptional(None)
+        signature, signature_consumed = PrefixedOptional.from_bytes(
+            data[offset:], String
+        )
+        offset += signature_consumed
 
         return cls(name=name, value=value, signature=signature), offset
 
@@ -74,6 +80,8 @@ class GameProfile(DataType):
             raise TypeError("uuid must be a UUID DataType instance")
         if not isinstance(self.name, String):
             raise TypeError("name must be a String")
+        if len(self.name.value) > 16:
+            raise ValueError("Profile username cannot exceed 16 characters")
         if not isinstance(self.properties, list):
             raise TypeError("properties must be a list of Property")
         for prop in self.properties:
@@ -107,22 +115,8 @@ class GameProfile(DataType):
         # Deserialize Properties
         properties = []
         for _ in range(properties_count):
-            prop_name, prop_name_consumed = String.from_bytes(data[offset:])
-            offset += prop_name_consumed
-
-            prop_value, prop_value_consumed = String.from_bytes(data[offset:])
-            offset += prop_value_consumed
-
-            if offset < len(data):
-                prop_signature, sig_consumed = PrefixedOptional.from_bytes(
-                    data[offset:], String
-                )
-                offset += sig_consumed
-            else:
-                prop_signature = PrefixedOptional(None)
-
-            properties.append(
-                Property(name=prop_name, value=prop_value, signature=prop_signature)
-            )
+            prop, consumed = Property.from_bytes(data[offset:])
+            offset += consumed
+            properties.append(prop)
 
         return cls(uuid=uuid, name=name, properties=properties), offset
