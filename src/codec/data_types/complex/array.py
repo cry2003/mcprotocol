@@ -38,7 +38,7 @@ class Array(DataType):
         data: bytes,
         length: int,
         element_type: Type[DataType],
-    ) -> "Array":
+    ) -> tuple["Array", int]:
         """Deserialize exactly `length` elements of type `element_type`.
 
         Args:
@@ -53,8 +53,8 @@ class Array(DataType):
         offset = 0
 
         for _ in range(length):
-            element = element_type.from_bytes(data[offset:])
+            element, consumed = element_type.from_bytes(data[offset:])
             elements.append(element)
-            offset += len(bytes(element))
+            offset += consumed
 
-        return cls(elements)
+        return cls(elements), offset

@@ -37,7 +37,9 @@ class PrefixedOptional(DataType, Generic[X]):
         return bytes(Boolean(True)) + bytes(self.value)
 
     @classmethod
-    def from_bytes(cls, data: bytes, type_cls: type[X]) -> "PrefixedOptional[X]":
+    def from_bytes(
+        cls, data: bytes, type_cls: type[X]
+    ) -> tuple["PrefixedOptional[X]", int]:
         """
         Deserialize a PrefixedOptional field.
 
@@ -52,10 +54,11 @@ class PrefixedOptional(DataType, Generic[X]):
             raise ValueError("No data to deserialize PrefixedOptional")
 
         # Read presence boolean
-        present = Boolean.from_bytes(data[:1]).value
+        presence, consumed = Boolean.from_bytes(data)
+        present = presence.value
         if not present:
-            return cls(value=None)
+            return cls(value=None), consumed
 
         # Deserialize the inner type
-        value = type_cls.from_bytes(data[1:])
-        return cls(value=value)
+        value, value_consumed = type_cls.from_bytes(data[consumed:])
+        return cls(value=value), consumed + value_consumed

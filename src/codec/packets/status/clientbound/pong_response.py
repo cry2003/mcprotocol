@@ -32,7 +32,8 @@ class PongResponse(Packet):
         super().__init__(VarInt(0x01))
 
         if isinstance(data, bytes):
-            self.timestamp = Long.from_bytes(data).value
+            long_value, _ = Long.from_bytes(data)
+            self.timestamp = long_value.value
         else:
             self.timestamp = int(data)
 

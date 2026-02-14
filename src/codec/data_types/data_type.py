@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TypeVar
+from typing import TypeVar, Tuple
 
 
 T = TypeVar("T", bound="DataType")
@@ -30,7 +30,7 @@ class DataType(ABC):
 
     @classmethod
     @abstractmethod
-    def from_bytes(cls: type[T], data: bytes) -> T:
+    def from_bytes(cls: type[T], data: bytes) -> Tuple[T, int]:
         """
         Deserialize the data type from bytes.
 
@@ -38,7 +38,7 @@ class DataType(ABC):
             data: Raw byte buffer starting at this data type.
 
         Returns:
-            An instance of the data type.
+            A tuple of (instance, bytes_consumed).
         
         """
         raise NotImplementedError

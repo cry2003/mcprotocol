@@ -21,7 +21,7 @@ class CookieRequest(Packet):
     def __init__(self, data: bytes) -> None:
         super().__init__(packet_id=VarInt(0x00))
         # Parse key
-        self.key = Identifier.from_bytes(data)
+        self.key, _ = Identifier.from_bytes(data)
 
     def _iter_fields(self):
         """Returns an iterator over the packet's fields."""

@@ -27,12 +27,14 @@ class CookieResponse(Packet):
         offset = 0
 
         # Parse key
-        self.key = Identifier.from_bytes(data[offset:])
-        offset += len(bytes(self.key))
+        self.key, consumed = Identifier.from_bytes(data[offset:])
+        offset += consumed
 
         # Remaining bytes are optional payload
         if offset < len(data):
-            self.payload = PrefixedArray.from_bytes(data[offset:], element_type=Byte)
+            self.payload, _ = PrefixedArray.from_bytes(
+                data[offset:], element_type=Byte
+            )
             # Validate maximum length
             if len(self.payload.values) > 5120:
                 raise ValueError(

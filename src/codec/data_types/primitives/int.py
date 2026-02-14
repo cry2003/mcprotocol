@@ -24,9 +24,9 @@ class Int(DataType):
         return struct.pack(">i", self.value)
 
     @classmethod
-    def from_bytes(cls, data: bytes) -> Int:
+    def from_bytes(cls, data: bytes) -> tuple[Int, int]:
         """Deserialize 4-byte signed integer."""
         if len(data) < 4:
             raise ValueError("Not enough bytes to read Int")
         value = struct.unpack(">i", data[:4])[0]
-        return cls(value)
+        return cls(value), 4

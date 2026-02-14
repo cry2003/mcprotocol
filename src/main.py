@@ -43,10 +43,7 @@ def main() -> None:
             
             # Read Login Finished packet
             login_finished = packet_io.read()
-            print("Login Success:", login_finished)
-            
-            packet_io.send(packet_id="0x03")
-            
+            print("Login Success:", login_finished)            
 
     except ConnectionRefusedError:
         print(f"Could not connect to {host}:{port}")

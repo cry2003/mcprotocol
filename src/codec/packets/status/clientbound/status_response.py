@@ -44,7 +44,7 @@ class StatusResponse(Packet):
         super().__init__(VarInt(0x00))
 
         # Deserialize the JSON string
-        string_field = String.from_bytes(data)
+        string_field, _ = String.from_bytes(data)
         self._json_string = string_field.value
 
         # Parse JSON safely

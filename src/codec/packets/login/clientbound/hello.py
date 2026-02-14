@@ -37,20 +37,24 @@ class Hello(Packet):
         offset = 0
 
         # Parse server_id using existing String.from_bytes
-        self.server_id = String.from_bytes(data[offset:])
-        offset += len(bytes(self.server_id))
+        self.server_id, consumed = String.from_bytes(data[offset:])
+        offset += consumed
 
         # Parse public_key
-        self.public_key = PrefixedArray.from_bytes(data[offset:], element_type=Byte)
-        offset += len(bytes(self.public_key))
+        self.public_key, consumed = PrefixedArray.from_bytes(
+            data[offset:], element_type=Byte
+        )
+        offset += consumed
 
         # Parse verify_token
-        self.verify_token = PrefixedArray.from_bytes(data[offset:], element_type=Byte)
-        offset += len(bytes(self.verify_token))
+        self.verify_token, consumed = PrefixedArray.from_bytes(
+            data[offset:], element_type=Byte
+        )
+        offset += consumed
 
         # Parse should_authenticate
-        self.should_authenticate = Boolean.from_bytes(data[offset:])
-        offset += len(bytes(self.should_authenticate))
+        self.should_authenticate, consumed = Boolean.from_bytes(data[offset:])
+        offset += consumed
 
     def _iter_fields(self):
         yield self.server_id

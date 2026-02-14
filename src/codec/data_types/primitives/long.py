@@ -48,7 +48,7 @@ class Long(DataType):
         return str(self.value)
     
     @classmethod
-    def from_bytes(cls, data: bytes) -> "Long":
+    def from_bytes(cls, data: bytes) -> tuple["Long", int]:
         """Construct a Long from 8 raw bytes.
         
         Returns:
@@ -57,4 +57,4 @@ class Long(DataType):
         if len(data) < 8:
             raise ValueError(f"Not enough bytes to unpack Long, got {len(data)}")
         value = struct.unpack(">q", data[:8])[0]
-        return cls(value)
+        return cls(value), 8

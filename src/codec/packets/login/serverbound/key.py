@@ -28,12 +28,16 @@ class key(Packet):
         offset = 0
 
         # Parse shared_secret
-        self.shared_secret = PrefixedArray.from_bytes(data[offset:], element_type=Byte)
-        offset += len(bytes(self.shared_secret))
+        self.shared_secret, consumed = PrefixedArray.from_bytes(
+            data[offset:], element_type=Byte
+        )
+        offset += consumed
 
         # Parse verify_token
-        self.verify_token = PrefixedArray.from_bytes(data[offset:], element_type=Byte)
-        offset += len(bytes(self.verify_token))
+        self.verify_token, consumed = PrefixedArray.from_bytes(
+            data[offset:], element_type=Byte
+        )
+        offset += consumed
 
     def _iter_fields(self):
         """Returns an iterator over the packet's fields."""

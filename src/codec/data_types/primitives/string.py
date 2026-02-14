@@ -73,7 +73,7 @@ class String(DataType):
         return length_prefix + utf8_bytes
 
     @classmethod
-    def from_bytes(cls, data: bytes) -> "String":
+    def from_bytes(cls, data: bytes) -> tuple["String", int]:
         """Deserialize a String from a byte buffer.
 
         Args:
@@ -85,13 +85,9 @@ class String(DataType):
         Raises:
             ValueError: If data is too short for the expected string length.
         """
-        length_varint = VarInt.from_bytes(data)
+        length_varint, varint_size = VarInt.from_bytes(data)
         str_len = length_varint.value
-        
-        # Calculate how many bytes the VarInt consumed
-        varint_bytes = bytes(length_varint)
-        varint_size = len(varint_bytes)
-        
+
         start = varint_size
         end = start + str_len
 
@@ -100,4 +96,4 @@ class String(DataType):
 
         utf8_bytes = data[start:end]
         value = utf8_bytes.decode("utf-8")
-        return cls(value)
+        return cls(value), end

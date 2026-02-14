@@ -34,7 +34,7 @@ class Enum(DataType):
         return bytes(self.base_type(self.value))
 
     @classmethod
-    def from_bytes(cls, data: bytes) -> "Enum":
+    def from_bytes(cls, data: bytes) -> tuple["Enum", int]:
         """Deserialize an Enum from a byte buffer.
 
         Args:
@@ -43,5 +43,5 @@ class Enum(DataType):
         Returns:
             Enum: Enum instance.
         """
-        base_instance = cls.base_type.from_bytes(data)
-        return cls(base_instance.value, cls.base_type)
+        base_instance, consumed = cls.base_type.from_bytes(data)
+        return cls(base_instance.value, cls.base_type), consumed

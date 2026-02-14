@@ -24,8 +24,8 @@ class CustomQueryAnswer(Packet):
         offset = 0
 
         # Parse message_id
-        self.message_id = VarInt.from_bytes(data[offset:])
-        offset += len(bytes(self.message_id))
+        self.message_id, consumed = VarInt.from_bytes(data[offset:])
+        offset += consumed
 
         # Validate message_id
         if self.message_id.value < 0:

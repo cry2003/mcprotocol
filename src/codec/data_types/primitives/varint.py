@@ -54,7 +54,7 @@ class VarInt(DataType):
         return bytes(result)
 
     @classmethod
-    def from_bytes(cls, data: bytes) -> "VarInt":
+    def from_bytes(cls, data: bytes) -> tuple["VarInt", int]:
         """
         Decodes a VarInt from bytes.
 
@@ -76,5 +76,5 @@ class VarInt(DataType):
             if num_read > 5:
                 raise ValueError("VarInt too long (max 5 bytes)")
             if (b & _CONTINUE_BIT) == 0:
-                return cls(result)
+                return cls(result), num_read
         raise ValueError("Incomplete VarInt bytes")

@@ -54,7 +54,7 @@ class VarLong(DataType):
         return bytes(result)
 
     @classmethod
-    def from_bytes(cls, data: bytes) -> "VarLong":
+    def from_bytes(cls, data: bytes) -> tuple["VarLong", int]:
         """Deserialize a VarLong from bytes.
 
         Args:
@@ -75,5 +75,5 @@ class VarLong(DataType):
             if num_read > 10:
                 raise ValueError("VarLong too long (max 10 bytes)")
             if (b & _CONTINUE_BIT) == 0:
-                return cls(result)
+                return cls(result), num_read
         raise ValueError("Incomplete VarLong bytes")

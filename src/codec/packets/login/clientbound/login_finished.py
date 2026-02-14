@@ -31,7 +31,7 @@ class LoginFinished(Packet):
         super().__init__(packet_id=VarInt(0x02))
 
         # Deserialize the GameProfile from bytes
-        self.profile = GameProfile.from_bytes(data)
+        self.profile, _ = GameProfile.from_bytes(data)
 
     def _iter_fields(self):
         """Yield serialized fields in protocol order."""

@@ -37,19 +37,21 @@ class Property(DataType):
         return bytes(self.name) + bytes(self.value) + bytes(self.signature)
 
     @classmethod
-    def from_bytes(cls, data: bytes) -> "Property":
-        name = String.from_bytes(data)
-        offset = len(bytes(name))
+    def from_bytes(cls, data: bytes) -> tuple["Property", int]:
+        name, offset = String.from_bytes(data)
 
-        value = String.from_bytes(data[offset:])
-        offset += len(bytes(value))
+        value, value_consumed = String.from_bytes(data[offset:])
+        offset += value_consumed
 
         if offset < len(data):
-            signature = PrefixedOptional.from_bytes(data[offset:], String)
+            signature, signature_consumed = PrefixedOptional.from_bytes(
+                data[offset:], String
+            )
+            offset += signature_consumed
         else:
             signature = PrefixedOptional(None)
 
-        return cls(name=name, value=value, signature=signature)
+        return cls(name=name, value=value, signature=signature), offset
 
 
 @dataclass(slots=True, frozen=True)
@@ -86,33 +88,36 @@ class GameProfile(DataType):
         return uuid_bytes + name_bytes + properties_count + properties_bytes
 
     @classmethod
-    def from_bytes(cls, data: bytes) -> "GameProfile":
+    def from_bytes(cls, data: bytes) -> tuple["GameProfile", int]:
         offset = 0
 
         # Deserialize UUID
-        uuid = UUID.from_bytes(data[offset:16])  # UUID DataType uses 16 bytes
-        offset += 16
+        uuid, uuid_consumed = UUID.from_bytes(data[offset:])  # UUID uses 16 bytes
+        offset += uuid_consumed
 
         # Deserialize Name
-        name = String.from_bytes(data[offset:])
-        offset += len(bytes(name))
+        name, name_consumed = String.from_bytes(data[offset:])
+        offset += name_consumed
 
         # Deserialize Properties count
-        properties_count_varint = VarInt.from_bytes(data[offset:])
+        properties_count_varint, count_consumed = VarInt.from_bytes(data[offset:])
         properties_count = properties_count_varint.value
-        offset += len(bytes(properties_count_varint))
+        offset += count_consumed
 
         # Deserialize Properties
         properties = []
         for _ in range(properties_count):
-            prop_name = String.from_bytes(data[offset:])
-            offset += len(bytes(prop_name))
+            prop_name, prop_name_consumed = String.from_bytes(data[offset:])
+            offset += prop_name_consumed
 
-            prop_value = String.from_bytes(data[offset:])
-            offset += len(bytes(prop_value))
+            prop_value, prop_value_consumed = String.from_bytes(data[offset:])
+            offset += prop_value_consumed
 
             if offset < len(data):
-                prop_signature = PrefixedOptional.from_bytes(data[offset:], String)
+                prop_signature, sig_consumed = PrefixedOptional.from_bytes(
+                    data[offset:], String
+                )
+                offset += sig_consumed
             else:
                 prop_signature = PrefixedOptional(None)
 
@@ -120,4 +125,4 @@ class GameProfile(DataType):
                 Property(name=prop_name, value=prop_value, signature=prop_signature)
             )
 
-        return cls(uuid=uuid, name=name, properties=properties)
+        return cls(uuid=uuid, name=name, properties=properties), offset

@@ -398,7 +398,7 @@ class JsonTextComponent(DataType):
         return bytes(VarInt(len(json_bytes))) + json_bytes
 
     @classmethod
-    def from_bytes(cls, data: bytes) -> "JsonTextComponent":
+    def from_bytes(cls, data: bytes) -> tuple["JsonTextComponent", int]:
         """Deserialize component from JSON with VarInt length prefix.
 
         Args:
@@ -407,10 +407,9 @@ class JsonTextComponent(DataType):
         Returns:
             JsonTextComponent instance
         """
-        length_varint = VarInt.from_bytes(data)
-        varint_bytes = len(bytes(length_varint))
+        length_varint, varint_bytes = VarInt.from_bytes(data)
         json_start = varint_bytes
         json_end = json_start + length_varint.value
         raw_json = data[json_start:json_end]
         obj = json.loads(raw_json.decode("utf-8"))
-        return cls(obj)
+        return cls(obj), json_end

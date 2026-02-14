@@ -54,7 +54,7 @@ class UUID(DataType):
     @classmethod
     def from_bytes(
         cls, buf: Union[bytes, memoryview]
-    ) -> "UUID":
+    ) -> tuple["UUID", int]:
         """Deserialize a UUID from a byte buffer.
 
         Args:
@@ -71,4 +71,4 @@ class UUID(DataType):
                 f"Buffer too small to decode UUID: need 16 bytes"
             )
         raw = bytes(buf[:16])
-        return cls(PyUUID(bytes=raw))
+        return cls(PyUUID(bytes=raw)), 16

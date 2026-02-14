@@ -26,7 +26,7 @@ class LoginDisconnect(Packet):
         super().__init__(packet_id=VarInt(0x00))
 
         # JSON Text Component
-        self.reason = JsonTextComponent.from_bytes(data)
+        self.reason, _ = JsonTextComponent.from_bytes(data)
 
     def _iter_fields(self):
         # Serialization order must match protocol specification

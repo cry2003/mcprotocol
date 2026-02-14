@@ -33,7 +33,7 @@ class Boolean(DataType):
         return b"\x01" if self.value else b"\x00"
 
     @classmethod
-    def from_bytes(cls, data: bytes) -> "Boolean":
+    def from_bytes(cls, data: bytes) -> tuple["Boolean", int]:
         """Deserialize a Boolean from a byte buffer.
 
         Args:
@@ -49,4 +49,4 @@ class Boolean(DataType):
         byte_val = data[0]
         if byte_val not in (0x00, 0x01):
             raise ValueError(f"Invalid Boolean byte: {byte_val}")
-        return cls(bool(byte_val))
+        return cls(bool(byte_val)), 1

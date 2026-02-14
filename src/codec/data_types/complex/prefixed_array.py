@@ -55,7 +55,7 @@ class PrefixedArray(DataType):
         cls,
         data: bytes,
         element_type: Type[DataType],
-    ) -> "PrefixedArray":
+    ) -> tuple["PrefixedArray", int]:
         """Deserialize a length-prefixed array from a byte buffer.
 
         Args:
@@ -65,11 +65,10 @@ class PrefixedArray(DataType):
         Returns:
             PrefixedArray: Deserialized array instance.
         """
-        length = VarInt.from_bytes(data)
-        offset = len(bytes(length))
+        length, length_consumed = VarInt.from_bytes(data)
 
-        array = Array.from_bytes(
-            data=data[offset:], length=length.value, element_type=element_type
+        array, array_consumed = Array.from_bytes(
+            data=data[length_consumed:], length=length.value, element_type=element_type
         )
 
-        return cls(array.values)
+        return cls(array.values), length_consumed + array_consumed

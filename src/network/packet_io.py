@@ -133,7 +133,7 @@ class PacketIO:
         else:
             raise ValueError("Packet Length VarInt exceeds 3 bytes")
 
-        packet_length = VarInt.from_bytes(raw_length)
+        packet_length, _ = VarInt.from_bytes(raw_length)
         if packet_length.value > _MAX_VARINT_3_BYTES:
             raise ValueError(f"Packet length too large: {packet_length.value}")
 
@@ -166,8 +166,7 @@ class PacketIO:
 
         # Compression disabled → legacy format
         if self.compression_threshold is None:
-            packet_id = VarInt.from_bytes(payload)
-            cursor = len(bytes(packet_id))
+            packet_id, cursor = VarInt.from_bytes(payload)
 
             return self.registry.instantiate(
                 state=self._state,
@@ -177,13 +176,12 @@ class PacketIO:
             )
 
         # Compression enabled → Data Length is mandatory
-        data_length = VarInt.from_bytes(payload)
-        cursor = len(bytes(data_length))
+        data_length, cursor = VarInt.from_bytes(payload)
 
         # Uncompressed packet
         if data_length.value == 0:
-            packet_id = VarInt.from_bytes(payload[cursor:])
-            cursor += len(bytes(packet_id))
+            packet_id, packet_id_consumed = VarInt.from_bytes(payload[cursor:])
+            cursor += packet_id_consumed
 
             return self.registry.instantiate(
                 state=self._state,
@@ -200,8 +198,7 @@ class PacketIO:
         if len(decompressed) != data_length.value:
             raise ValueError("Decompressed data length mismatch")
 
-        packet_id = VarInt.from_bytes(decompressed)
-        cursor = len(bytes(packet_id))
+        packet_id, cursor = VarInt.from_bytes(decompressed)
 
         return self.registry.instantiate(
             state=self._state,

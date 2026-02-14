@@ -43,7 +43,7 @@ class UnsignedShort(DataType):
         return struct.pack(">H", self.value)
 
     @classmethod
-    def from_bytes(cls, data: bytes) -> "UnsignedShort":
+    def from_bytes(cls, data: bytes) -> tuple["UnsignedShort", int]:
         """Deserialize an UnsignedShort from a byte buffer.
 
         Args:
@@ -58,4 +58,4 @@ class UnsignedShort(DataType):
         if len(data) < 2:
             raise ValueError("Data too short to read UnsignedShort")
         value = struct.unpack_from(">H", data)[0]
-        return cls(value)
+        return cls(value), 2

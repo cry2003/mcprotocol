@@ -11,3 +11,6 @@ _MAX_PACKET_LENGTH = 2**21 - 1  # 2097151
 # identifier.py constants
 _NAMESPACE_RE = re.compile(r"^[a-z0-9._-]+$")
 _VALUE_RE = re.compile(r"^[a-z0-9._/-]+$")
+
+# custom_payload.py constants
+_MAX_PAYLOAD_LENGTH = 1048576

@@ -58,6 +58,11 @@ class Identifier(String):
         # Store final normalized value
         super().__init__(f"{namespace}:{path}")
 
+    @classmethod
+    def from_bytes(cls, data: bytes) -> tuple["Identifier", int]:
+        string_value, consumed = String.from_bytes(data)
+        return cls(string_value.value), consumed
+
     @property
     def namespace(self) -> str:
         return self.value.split(":", 1)[0]

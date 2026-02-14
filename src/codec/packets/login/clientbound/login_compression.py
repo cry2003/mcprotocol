@@ -37,7 +37,7 @@ class LoginCompression(Packet):
         """
         super().__init__(packet_id=VarInt(0x03))
 
-        self.threshold = VarInt.from_bytes(data)
+        self.threshold, _ = VarInt.from_bytes(data)
         value = self.threshold.value
 
         # Negative values are allowed and disable compression

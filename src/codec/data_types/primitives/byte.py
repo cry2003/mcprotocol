@@ -45,7 +45,7 @@ class Byte(DataType):
         return self.value.to_bytes(1, byteorder="big", signed=True)
 
     @classmethod
-    def from_bytes(cls, data: bytes) -> "Byte":
+    def from_bytes(cls, data: bytes) -> tuple["Byte", int]:
         """Deserialize a Byte from a byte buffer.
 
         Args:
@@ -60,4 +60,4 @@ class Byte(DataType):
         if len(data) < 1:
             raise ValueError("Data too short to read a Byte")
         value = int.from_bytes(data[:1], byteorder="big", signed=True)
-        return cls(value)
+        return cls(value), 1

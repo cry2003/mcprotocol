@@ -29,12 +29,12 @@ class CustomQuery(Packet):
         offset = 0
 
         # Parse message_id
-        self.message_id = VarInt.from_bytes(data[offset:])
-        offset += len(bytes(self.message_id))
+        self.message_id, consumed = VarInt.from_bytes(data[offset:])
+        offset += consumed
 
         # Parse channel
-        self.channel = Identifier.from_bytes(data[offset:])
-        offset += len(bytes(self.channel))
+        self.channel, consumed = Identifier.from_bytes(data[offset:])
+        offset += consumed
 
         # The rest is data (may be empty)
         self.data = data[offset:]
