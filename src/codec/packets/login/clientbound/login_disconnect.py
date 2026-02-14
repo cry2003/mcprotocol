@@ -25,7 +25,6 @@ class LoginDisconnect(Packet):
     def __init__(self, data: bytes) -> None:
         super().__init__(packet_id=VarInt(0x00))
 
-        # JSON Text Component
         self.reason, _ = JsonTextComponent.from_bytes(data)
 
     def _iter_fields(self):

@@ -1,3 +1,5 @@
+# src/codec/data_types/complex/json_text_component.py
+
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
