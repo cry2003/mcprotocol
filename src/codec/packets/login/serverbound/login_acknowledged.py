@@ -2,7 +2,6 @@
 
 from codec.packets.packet import Packet
 from codec.data_types.primitives.varint import VarInt
-from network.packet_io import PacketIO
 
 
 class LoginAcknowledged(Packet):
@@ -26,11 +25,14 @@ class LoginAcknowledged(Packet):
 
     __slots__ = ()
 
-    def __init__(self, packet_io: PacketIO) -> None:
+    def __init__(self, data: bytes) -> None:
         """Initialize LoginAcknowledged packet."""
         super().__init__(packet_id=VarInt(0x03))
 
-        packet_io.set_state("Configuration")
+        if data:
+            raise ValueError(
+                f"LoginAcknowledged has no fields, got {len(data)} trailing bytes"
+            )
 
     def _iter_fields(self):
         """Iterate over packet fields (none for this packet)."""
