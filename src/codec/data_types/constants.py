@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from codec.data_types.complex.array import Array
     from codec.data_types.primitives.string import String
     from codec.data_types.primitives.int import Int
-    from codec.data_types.complex.json_text_component import JsonTextComponent
+    from codec.data_types.complex.text_component import TextComponent
 
 # varint.py and varlong.py constants
 _SEGMENT_BITS = 0x7F
@@ -58,19 +58,19 @@ _CLICK_EVENTS = {
     "suggest_command": {"command": "String"},
     "change_page": {"page": "Int"},
     "copy_to_clipboard": {"value": "String"},
-    "show_dialog": {"dialog": "JsonTextComponent"},  # either String ID or compound
+    "show_dialog": {"dialog": "TextComponent"},  # either String ID or compound
     "custom": {"id": "String", "payload": "String"},  # optional payload
 }
 
 _HOVER_EVENTS = {
-    "show_text": {"value": "JsonTextComponent"},
+    "show_text": {"value": "TextComponent"},
     "show_item": {
         "id": "String",
         "count": "Int",  # optional
-        "components": "JsonTextComponent",  # optional
+        "components": "TextComponent",  # optional
     },
     "show_entity": {
-        "name": "JsonTextComponent",  # optional
+        "name": "TextComponent",  # optional
         "id": "String",
         "uuid": "Array",  # array of 4 ints or String UUID
     },
@@ -123,3 +123,37 @@ _NBT_DOUBLE_BYTES = 8
 # NBT practical bounds used by parser validation
 _MAX_NBT_STRING = 0xFFFF  # unsigned short byte length
 _MAX_NBT_ARRAY = _INT32_MAX
+
+# text_component.py constants
+_TEXT_COMPONENT_CONTENT_TYPES = {
+    "text",
+    "translatable",
+    "score",
+    "selector",
+    "keybind",
+    "nbt",
+    "object",
+}
+
+_TEXT_COMPONENT_CLICK_ACTIONS = {
+    "open_url",
+    "open_file",
+    "run_command",
+    "suggest_command",
+    "change_page",
+    "copy_to_clipboard",
+    "show_dialog",
+    "custom",
+}
+
+_TEXT_COMPONENT_HOVER_ACTIONS = {"show_text", "show_item", "show_entity"}
+
+_TEXT_COMPONENT_BOOL_FIELDS = {
+    "bold",
+    "italic",
+    "underlined",
+    "strikethrough",
+    "obfuscated",
+    "interpret",
+    "hat",
+}
