@@ -26,7 +26,7 @@ class Disconnect(Packet):
         super().__init__(packet_id=VarInt(0x02))
 
         # Deserialize reason using the new from_bytes API
-        self.reason, consumed = TextComponent.from_bytes(data)
+        self.reason, _ = TextComponent.from_bytes(data)
         # `consumed` can be used if further parsing is needed
 
     def _iter_fields(self):
