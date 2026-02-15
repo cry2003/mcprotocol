@@ -17,7 +17,7 @@ This document tracks the implementation status of all Minecraft protocol packets
 | **Status** | Clientbound | 2 | 2 ✓ | Complete |
 | **Login** | Serverbound | 5 | 5 ✓ | Complete |
 | **Login** | Clientbound | 6 | 6 ✓ | Complete |
-| **Configuration** | Clientbound | 1 | 1 ✓ | WIP |
+| **Configuration** | Clientbound | 12 | 12 ✓ | WIP |
 | **Configuration** | Serverbound | 0 | 0 | TODO |
 | **Play** | Serverbound | 0 | 0 | TODO |
 | **Play** | Clientbound | 0 | 0 | TODO |
@@ -312,5 +312,27 @@ No Play packets are implemented yet. This section will be populated once Play-st
 </thead>
 <tbody>
 <tr><td>Cookie Request</td><td>0x00</td><td>Client</td><td>Requests a configuration cookie</td><td>Implemented</td></tr>
+<tr><td>Custom Payload</td><td>0x01</td><td>Client</td><td>Plugin channel payload during configuration</td><td>Implemented</td></tr>
+<tr><td>Disconnect</td><td>0x02</td><td>Client</td><td>Disconnect reason as text component</td><td>Implemented</td></tr>
+<tr><td>Finish Configuration</td><td>0x03</td><td>Client</td><td>Marks end of configuration phase</td><td>Implemented</td></tr>
+<tr><td>Keep Alive</td><td>0x04</td><td>Client</td><td>Configuration keep-alive identifier</td><td>Implemented</td></tr>
+<tr><td>Ping</td><td>0x05</td><td>Client</td><td>Configuration ping packet</td><td>Implemented</td></tr>
+<tr><td>Reset Chat</td><td>0x06</td><td>Client</td><td>Reset chat state/settings</td><td>Implemented</td></tr>
+<tr><td>Registry Data</td><td>0x07</td><td>Client</td><td>Synchronized registry entries (Identifier + optional NBT)</td><td>Implemented</td></tr>
+<tr><td>Resource Pack Pop</td><td>0x08</td><td>Client</td><td>Remove resource pack by UUID (or all)</td><td>Implemented</td></tr>
+<tr><td>Resource Pack Push</td><td>0x09</td><td>Client</td><td>Add resource pack metadata and optional prompt</td><td>Implemented</td></tr>
+<tr><td>Store Cookie</td><td>0x0A</td><td>Client</td><td>Store cookie data on client (max 5 KiB)</td><td>Implemented</td></tr>
+<tr><td>Transfer</td><td>0x0B</td><td>Client</td><td>Redirect client to another server host/port</td><td>Implemented</td></tr>
 </tbody>
 </table>
+
+---
+
+## Runtime TODO (Outside Codec Layer)
+
+- Implement client cookie persistence behavior for `Store Cookie` (0x0A).
+- Implement transfer workflow for `Transfer` (0x0B):
+  - close current socket
+  - connect to target host/port
+  - send Handshake with intent `3`
+  - continue login flow

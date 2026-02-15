@@ -234,6 +234,11 @@ This document defines formal contracts between components of the Minecraft codec
   * Delegate field parsing to packet registry
 * Should **not** create or construct packets — this is the responsibility of the `packets` module.
 
+Client runtime behaviors that are **outside** codec scope and should be implemented by an upper layer:
+
+* `Store Cookie` handling: persist cookies by `Identifier` (respecting packet limits).
+* `Transfer` handling: reconnect to new `host:port`, then send Handshake with intent `3`.
+
 ---
 
 ### `main.py`

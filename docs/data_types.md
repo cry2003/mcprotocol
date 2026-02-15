@@ -152,7 +152,7 @@ All data types in this library inherit from `DataType`, which defines two abstra
     <tr>
       <td>Text Component</td>
       <td>Varies; see Text component format</td>
-      <td>Pending</td>
+      <td>Implemented</td>
     </tr>
     <tr>
       <td>Json Text Component</td>
@@ -182,7 +182,7 @@ All data types in this library inherit from `DataType`, which defines two abstra
     <tr>
       <td>NBT</td>
       <td>Varies; Named Binary Tag</td>
-      <td>Pending</td>
+      <td>Implemented</td>
     </tr>
     <tr>
       <td>BitSet</td>
@@ -277,6 +277,11 @@ All data types in this library inherit from `DataType`, which defines two abstra
     <tr>
       <td>Game Profile</td>
       <td>Varies; UUID + username + properties</td>
+      <td>Implemented</td>
+    </tr>
+    <tr>
+      <td>Registry Entry</td>
+      <td>Identifier + Prefixed Optional NBT compound</td>
       <td>Implemented</td>
     </tr>
     <tr>

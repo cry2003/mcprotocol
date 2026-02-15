@@ -174,6 +174,17 @@ Pre-implemented packets organized by protocol state:
 #### Configuration (State 4)
 
 - `Cookie Request` (clientbound, 0x00): Cookie request
+- `Custom Payload` (clientbound, 0x01): Plugin payload
+- `Disconnect` (clientbound, 0x02): Configuration disconnect reason
+- `Finish Configuration` (clientbound, 0x03): End of configuration phase
+- `Keep Alive` (clientbound, 0x04): Configuration keep-alive ID
+- `Ping` (clientbound, 0x05): Configuration ping ID
+- `Reset Chat` (clientbound, 0x06): Reset chat settings
+- `Registry Data` (clientbound, 0x07): Synchronized registry contents
+- `Remove Resource Pack` (clientbound, 0x08): Remove one/all packs
+- `Add Resource Pack` (clientbound, 0x09): Push resource pack metadata
+- `Store Cookie` (clientbound, 0x0A): Persist cookie payload on client
+- `Transfer` (clientbound, 0x0B): Redirect client to another server
 
 #### Play (State 3)
 
@@ -221,6 +232,35 @@ serialized = packet.serialize(compression_threshold=256)
 ## Testing
 
 No automated tests are currently tracked in this repository.
+
+---
+
+## Recent Changes
+
+- Added Configuration clientbound packet decoders:
+  - `RegistryData` (`0x07`)
+  - `ResourcePackPop` (`0x08`)
+  - `ResourcePackPush` (`0x09`)
+  - `StoreCookie` (`0x0A`)
+  - `Transfer` (`0x0B`)
+- Added `RegistryEntry` as reusable complex data type in `src/codec/data_types/complex/registry_entry.py`.
+- Tightened parsing consistency with stricter trailing-byte checks in packet/data-type decoding paths.
+- Added `.gitattributes` to enforce consistent line endings in the repository.
+
+---
+
+## TODO (Client Runtime)
+
+The codec layer currently parses/serializes packets. The following client-runtime behaviors are still pending:
+
+1. `StoreCookie` handling:
+   - Maintain a cookie store keyed by `Identifier`.
+   - Enforce per-cookie size limit (5 KiB).
+   - Persist cookies across server transfer flow.
+2. `Transfer` handling:
+   - On `Transfer`, close current connection and connect to the target `host:port`.
+   - Send Handshake with intent `3` (Transfer) on the new connection.
+   - Continue with normal login flow if transfer is accepted.
 
 ---
 
