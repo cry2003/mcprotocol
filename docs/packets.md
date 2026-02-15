@@ -17,7 +17,7 @@ This document tracks the implementation status of all Minecraft protocol packets
 | **Status** | Clientbound | 2 | 2 ✓ | Complete |
 | **Login** | Serverbound | 5 | 5 ✓ | Complete |
 | **Login** | Clientbound | 6 | 6 ✓ | Complete |
-| **Configuration** | Clientbound | 12 | 12 ✓ | WIP |
+| **Configuration** | Clientbound | 13 | 13 ✓ | WIP |
 | **Configuration** | Serverbound | 0 | 0 | TODO |
 | **Play** | Serverbound | 0 | 0 | TODO |
 | **Play** | Clientbound | 0 | 0 | TODO |
@@ -323,6 +323,7 @@ No Play packets are implemented yet. This section will be populated once Play-st
 <tr><td>Resource Pack Push</td><td>0x09</td><td>Client</td><td>Add resource pack metadata and optional prompt</td><td>Implemented</td></tr>
 <tr><td>Store Cookie</td><td>0x0A</td><td>Client</td><td>Store cookie data on client (max 5 KiB)</td><td>Implemented</td></tr>
 <tr><td>Transfer</td><td>0x0B</td><td>Client</td><td>Redirect client to another server host/port</td><td>Implemented</td></tr>
+<tr><td>Update Enabled Features</td><td>0x0C</td><td>Client</td><td>Feature flag list (Identifier array). Includes special <code>minecraft:vanilla</code>; known Java experiments include <code>minecraft:minecart_improvements</code>, <code>minecraft:redstone_experiments</code>, <code>minecraft:trade_rebalance</code>.</td><td>Implemented</td></tr>
 </tbody>
 </table>
 

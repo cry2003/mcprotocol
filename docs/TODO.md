@@ -17,6 +17,15 @@ This file tracks pending work that is intentionally outside the pure codec layer
 4. Send Handshake with intent `3` (Transfer).
 5. Continue with normal login flow if accepted.
 
+## Registry / Tag Session State (MC-249007 semantics)
+
+1. Add a stateful registry/tag store across configuration/play phases.
+2. Apply `UpdateTags` (`Configuration`, `0x0D`) as per-tag replacement (not full registry reset).
+3. If `FinishConfiguration` arrives without any `RegistryData` in that phase, retain previously known synchronized registry tags.
+4. If any `RegistryData` is received during reconfiguration, forget previous synchronized registries and their tags before applying new data.
+5. Support tag updates in Play state against the same runtime store.
+6. Add regression tests for the above retention/reset behavior.
+
 ## Integration / Testing
 
 1. Add integration tests for `StoreCookie` decode + runtime storage behavior.
