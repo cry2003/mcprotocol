@@ -14,3 +14,13 @@ _VALUE_RE = re.compile(r"^[a-z0-9._/-]+$")
 
 # custom_payload.py constants
 _MAX_PAYLOAD_LENGTH = 1048576
+
+# update_enabled_features.py constants
+_VANILLA_FEATURE_FLAG = "minecraft:vanilla"
+_JAVA_EXPERIMENTAL_FEATURE_FLAGS = frozenset(
+    {
+        "minecraft:minecart_improvements",
+        "minecraft:redstone_experiments",
+        "minecraft:trade_rebalance",
+    }
+)
